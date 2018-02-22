@@ -1,0 +1,1754 @@
+package plotCAS;
+
+import java.awt.Color; 
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.awt.image.BufferedImage;
+
+import javax.imageio.ImageIO;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.ImageIcon;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JButton;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.BorderFactory;
+import javax.swing.JFileChooser;
+import javax.swing.JRadioButton;
+import javax.swing.JSplitPane;
+import javax.swing.JTextArea;
+import javax.swing.JScrollPane;
+import javax.swing.JTextField;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.OutputStreamWriter;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+
+public class Window extends JFrame {
+	private static final long serialVersionUID = 1L;
+    
+	/*   MENU  */
+	JMenu analysis, export, settings;
+	JMenuItem optcurve, optplot;
+    /*   SUBWINDOWS  */
+    private JPanel container = new JPanel();
+    private JPanel plotscreen = new JPanel();
+    private JPanel optionscreen = new JPanel();
+    private JLabel optiontitle = new JLabel("");
+    private Plotgraph p;
+    
+    /*   Various  */
+	public static int ncurve=0;
+	public static ArrayList<Curve> curve = new ArrayList<Curve>();
+	public static ArrayList<JCheckBox> whichcurve = new ArrayList<JCheckBox>();
+	
+	private JComboBox curvesel=new JComboBox();
+	
+	public static Default curDefault=new Default();
+	
+    /* ******************************** */
+    /* *******      Window     ******** */
+    /* ******************************** */
+
+	public Window(){
+		this.setTitle("plotCAS");
+		this.setSize(1000, 600);
+	    this.setLocationRelativeTo(null);
+	    this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+	    WindowListener exitListener = new WindowAdapter() {
+
+            @Override
+            public void windowClosing(WindowEvent e) {
+                int confirm = JOptionPane.showOptionDialog(null, "Are You Sure you want to exit?", "Exit Confirmation", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
+                if (confirm == 0) {
+                	File folder = new File(".");
+                	File fList[] = folder.listFiles();
+                	for (int i = 0; i < fList.length; i++) {
+                	    String pes = fList[i].getName();
+                	    if (pes.endsWith(".xy")||pes.endsWith(".input")||pes.startsWith("molcas")) {
+                	        boolean success = (fList[i].delete());
+                	    }
+                	}
+                	PlotCAS.WorkDir.delete();
+                   System.exit(0);
+                }
+            }
+        };
+	    this.addWindowListener(exitListener);
+	    
+		/*   MENU  */
+		JMenuBar menuBar = new JMenuBar();
+	    JMenu input = new JMenu("Input");
+	    JMenuItem inputmolcas = new JMenuItem("MOLCAS file");
+	    JMenuItem inputtrans = new JMenuItem("List of transitions");
+	    JMenuItem inputxy = new JMenuItem("XY curve");
+	    input.add(inputmolcas);
+	    inputmolcas.addActionListener(new Molcasinput());
+	    input.add(inputtrans);
+	    inputtrans.addActionListener(new Transinput());
+	    input.add(inputxy);
+	    inputxy.addActionListener(new XYinput());
+	    menuBar.add(input);
+	    
+	    JMenu plotoptions = new JMenu("Plotting");
+	    optcurve = new JMenuItem("Curve options");
+	    optplot = new JMenuItem("General settings");
+	    JMenuItem defaultmenu = new JMenuItem("Save settings");
+	    JMenuItem loaddefaultmenu = new JMenuItem("Load settings");
+	    optcurve.addActionListener(new PlotCurvemenu());
+	    optcurve.setEnabled(false);
+	    plotoptions.add(optcurve);
+	    optplot.addActionListener(new PlotOptmenu());
+	    optplot.setEnabled(false);
+	    plotoptions.add(optplot);
+	    defaultmenu.addActionListener(new defaultmenu());
+	    plotoptions.add(defaultmenu);
+	    loaddefaultmenu.addActionListener(new loaddefaultmenu());
+	    plotoptions.add(loaddefaultmenu);
+	    menuBar.add(plotoptions);
+	    
+	    analysis = new JMenu("Analysis");
+	    analysis.setEnabled(false);
+	    JMenuItem analorb = new JMenuItem("Orbital contributions");
+	    analorb.addActionListener(new Analorbmenu());
+	    analysis.add(analorb);
+	    JMenuItem operations = new JMenuItem("Curve operations");
+	    operations.addActionListener(new CurveOp());
+	    analysis.add(operations);
+	    JMenuItem intensity = new JMenuItem("Integrated intensity");
+	    intensity.addActionListener(new IntIntens());
+	    analysis.add(intensity);
+	    JMenuItem scatter = new JMenuItem("Scattering");
+	    scatter.addActionListener(new Scatter());
+	    analysis.add(scatter);
+	    JMenuItem similarity = new JMenuItem("Similarity");
+	    similarity.addActionListener(new Similarity());
+	    analysis.add(similarity);
+	    menuBar.add(analysis);
+	    
+	    export = new JMenu("Export");
+	    export.setEnabled(false);
+	    JMenuItem exportxy = new JMenuItem("Curve XY");
+	    exportxy.addActionListener(new ExportXY());
+	    export.add(exportxy);
+	    JMenuItem exportimg = new JMenuItem("Picture");
+	    exportimg.addActionListener(new ExportImg());
+	    export.add(exportimg);
+	    JMenuItem exporttrans = new JMenuItem("List of transitions");
+	    exporttrans.addActionListener(new ExportTrans());
+	    export.add(exporttrans);
+	    menuBar.add(export);
+	    
+	    JMenuItem about = new JMenuItem("About");
+	    about.addActionListener(new aboutmenu());
+	    menuBar.add(about);
+	    
+	    setJMenuBar(menuBar);
+	    
+	    /*   SUBWINDOWS  */
+	    
+	    JScrollPane optionpanel;
+	    
+	    
+	    container.setLayout(new BorderLayout());
+	    optionscreen.setBorder(BorderFactory.createMatteBorder(0, 1, 0, 0, Color.black));
+	    optionscreen.setLayout(new BoxLayout(optionscreen, BoxLayout.PAGE_AXIS));
+	    optionpanel = new JScrollPane(optionscreen);
+	    
+	    plotscreen.setLayout(new BorderLayout());
+	    
+	    
+	    JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+	    		plotscreen, optionpanel);
+	    splitPane.setResizeWeight(0.7);
+	    container.add(splitPane);
+	    
+	    this.setContentPane(container);	    
+	    this.setVisible(true);
+	}
+
+	/* ******************************** */
+	/* *******      About      ******** */
+	/* ******************************** */
+	
+	class aboutmenu implements ActionListener {
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();		
+			optiontitle.setText("About");
+			optionscreen.add(optiontitle);
+			
+			optionscreen.add(new JLabel("PlotCAS"));
+			optionscreen.add(new JLabel("A CASSCF/CASPT2 spectrum plotting program"));
+			
+			optionscreen.add(new JLabel("v"+PlotCAS.currentversion));
+			optionscreen.add(new JLabel("2014, 4th july"));
+			
+			optionscreen.add(new JLabel("author : M.G. Delcey"));
+			
+			optionscreen.add(new JLabel("License CC-BY-SA 3.0"));
+			
+		    optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+	}
+	
+	/* ******************************** */
+	/* *******   Empty menu    ******** */
+	/* ******************************** */
+	
+	// A good way to exit a current menu made obsolete
+	
+	public void emptymenu()
+	{
+		optionscreen.removeAll();
+		optionscreen.revalidate();
+	    optionscreen.repaint();
+	}
+	
+	/* ************************************************************ */
+    /* ************************************************************ */
+	/* *********************                  ********************* */
+    /* *********************       INPUT      ********************* */
+	/* *********************                  ********************* */
+	/* ************************************************************ */
+	/* ************************************************************ */
+	
+	
+	/* ******************************** */
+	/* *******   MOLCAS input  ******** */
+	/* ******************************** */
+	
+	class Molcasinput implements ActionListener {
+		private File selectedFile;
+		private JLabel filename = new JLabel("");
+		private JRadioButton SFbutton, SOCbutton;
+		private JCheckBox dipolebutton, quadrupolebutton, velocbutton,boltzbutton;
+		private JTextField ground1, ground2, curvename,boltztemp;
+		Molcasfile molcasinput;
+		JPanel smallbox;
+		public void actionPerformed(ActionEvent arg0){
+			
+			optionscreen.removeAll();		
+			optiontitle.setText("Input from MOLCAS file");
+			optionscreen.add(optiontitle);
+			
+			/* Open file */
+			filename.setText("");
+			JButton openbutton = new JButton("Select File");
+		    openbutton.addActionListener(new ActionListener() {
+		      public void actionPerformed(ActionEvent ae) {
+		        JFileChooser fileChooser = new JFileChooser();
+		        fileChooser.setCurrentDirectory(curDefault.get_dfile());
+		        
+		        int returnValue = fileChooser.showOpenDialog(null);
+		        if (returnValue == JFileChooser.APPROVE_OPTION) {
+		          selectedFile = fileChooser.getSelectedFile();
+		          filename.setText(selectedFile.getName());
+		          curDefault.set_dfile(selectedFile.getParentFile());
+		        }
+		      }
+		    });
+		    JPanel l1 = new JPanel();
+		    l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));
+		    l1.add(openbutton);
+		    l1.add(filename);
+		    optionscreen.add(l1);
+		    
+		    /* Which options should be read */
+		    
+		    smallbox=new JPanel();
+		    smallbox.setLayout(new BoxLayout(smallbox, BoxLayout.PAGE_AXIS));
+		    
+		    JButton loadbutton = new JButton("Load");
+		    optionscreen.add(loadbutton);
+		    loadbutton.addActionListener(new ActionListener() {
+			      public void actionPerformed(ActionEvent ae) {
+			    	  molcasinput = new Molcasfile(selectedFile);
+			    	  
+			    	  smallbox.removeAll();
+		    		  int wf = molcasinput.whichWF();  
+		    		  switch (wf)
+		    		  {
+		    		  	case 1:
+		    		  		smallbox.add(new JLabel("RASSCF calculation"));
+		    		  		break;
+		    		  	case 2:
+		    		  		smallbox.add(new JLabel("SS-CASPT2 calculation"));
+		    		  		break;
+		    		  	case 3:
+		    		  		smallbox.add(new JLabel("MS-CASPT2 calculation"));
+		    		  		break;
+		    		  }
+			    	  if (molcasinput.isRASSI())
+			    	  {
+			    		  smallbox.add(new JLabel("RASSI specifications"));
+			    		  
+			    		  int nrSF=molcasinput.getSFstates();
+			    		  int nrSOC=molcasinput.getSOCstates();
+			    		  ButtonGroup SFSOCGroup = new ButtonGroup();
+			    		  JPanel l2 = new JPanel();
+			    		  l2.setLayout(new BoxLayout(l2, BoxLayout.LINE_AXIS));
+			    		  if (nrSF>0)
+			    		  {
+			    			  smallbox.add(new JLabel(String.valueOf(nrSF)+" spin-free states"));
+			    			  SFbutton = new JRadioButton("Spin-Free");
+			    			  SFSOCGroup.add(SFbutton);
+			    			  l2.add(SFbutton);
+			    		  }
+			    		  if (nrSOC>0)
+			    		  {
+			    			  smallbox.add(new JLabel(String.valueOf(nrSOC)+" spin-orbit states"));
+			    			  SOCbutton = new JRadioButton("Spin-Orbit");
+			    			  SOCbutton.setSelected(true);
+			    			  SFSOCGroup.add(SOCbutton);
+			    			  l2.add(SOCbutton);
+			    		  }
+			    		  smallbox.add(l2);
+			    		  
+			    		  JPanel l3 = new JPanel();
+			    		  l3.setLayout(new BoxLayout(l3, BoxLayout.LINE_AXIS));
+			    		  if (molcasinput.isdipole())
+			    		  {
+			    			  dipolebutton = new JCheckBox("Dipole transitions");
+			    			  dipolebutton.setSelected(true);
+			    			  l3.add(dipolebutton);
+			    		  }
+			    		  if (molcasinput.isquadrupole())
+			    		  {
+			    			  quadrupolebutton = new JCheckBox("Quadrupole transitions");
+			    			  quadrupolebutton.setSelected(true);
+			    			  l3.add(quadrupolebutton);
+			    		  }
+			    		  if (molcasinput.isveloc())
+			    		  {
+			    			  velocbutton = new JCheckBox("Velocity representation");
+			    			  velocbutton.setSelected(false);
+			    			  l3.add(velocbutton);
+			    		  }
+			    		  smallbox.add(l3);
+			    		  
+			    		  JPanel l4 = new JPanel();
+			    		  l4.setLayout(new BoxLayout(l4, BoxLayout.LINE_AXIS));
+			    		  l4.add(new JLabel("Ground states from"));
+			    		  ground1 = new JTextField("1");
+			    		  l4.add(ground1);
+			    		  l4.add(new JLabel("to"));
+			    		  ground2 = new JTextField("1");
+			    		  l4.add(ground2);
+			    		  smallbox.add(l4);
+			    		  
+			    		  JPanel l5 = new JPanel();
+			    		  l5.setLayout(new BoxLayout(l5, BoxLayout.LINE_AXIS));
+			    		  boltzbutton = new JCheckBox("Boltzman distribution");
+			    		  l5.add(boltzbutton);
+			    		  boltztemp = new JTextField("298");
+			    		  l5.add(boltztemp);
+			    		  l5.add(new JLabel("K"));
+			    		  smallbox.add(l5);
+			    		  
+			    		  
+			    		  JPanel l6 = new JPanel();
+			    		  l6.setLayout(new BoxLayout(l6, BoxLayout.LINE_AXIS));
+			    		  JButton curvebutton = new JButton("Create curve");
+			    		  l6.add(curvebutton);
+			    		  curvename = new JTextField("curve name");
+			    		  l6.add(curvename);
+			    		  smallbox.add(l6);
+			    		  
+			    		  curvebutton.addActionListener(new ActionListener() {
+						      public void actionPerformed(ActionEvent ae) {
+						    	  String filename;
+						    	  boolean isSF,isSOC,isdip,isveloc,isquad;
+						    	  if (molcasinput.getSFstates()<=0){isSF=false;}
+						    	  else {isSF=SFbutton.isSelected();}
+						    	  if (molcasinput.getSOCstates()<=0){isSOC=false;}
+						    	  else {isSOC=SOCbutton.isSelected();}
+						    	  if (!molcasinput.isdipole()){isdip=false;}
+						    	  else {isdip=dipolebutton.isSelected();}
+						    	  if (!molcasinput.isquadrupole()){isquad=false;}
+						    	  else {isquad=quadrupolebutton.isSelected();}
+						    	  if (!molcasinput.isveloc()){isveloc=false;}
+						    	  else {isveloc=velocbutton.isSelected();}
+						    	  ncurve++;
+						    	  filename="curve"+String.valueOf(ncurve)+".input";
+						    	  File inpfile=new File (PlotCAS.WorkDir,filename);
+						    	  float temp=0;
+						    	  if (boltzbutton.isSelected())
+						    	  {
+						    		  temp=Float.parseFloat(boltztemp.getText());
+						    	  }
+						    	  molcasinput.setfromto(Integer.parseInt(ground1.getText()),Integer.parseInt(ground2.getText()));
+						    	  molcasinput.totransition(isSF,isSOC, isdip,isveloc,isquad,boltzbutton.isSelected(),temp,inpfile);
+						    	  addcurve(curvename.getText(),1,inpfile,"",Curveplot.getunit());
+						    	  curve.get(ncurve-1).setmolcas(molcasinput);
+						      }
+			    		  });
+			    		  
+			    	  }
+			    	  else
+			    	  {
+			    		  JOptionPane.showMessageDialog(new JFrame(),
+			    				    "To plot a spectrum, the input requires a RASSI section.",
+			    				    "Input error",
+			    				    JOptionPane.ERROR_MESSAGE);
+			    	  }
+			    	  optionscreen.add(smallbox);
+			    	  
+		    		  optionscreen.revalidate();
+		    		  optionscreen.repaint();
+			      }
+			    });
+		    
+		    
+		    optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+	}
+	/* ******************************** */
+	/* *******    List input   ******** */
+	/* ******************************** */
+	
+	class Transinput implements ActionListener {
+		private JTextArea textArea;
+		private JTextField curvename;
+		private JComboBox unitsel;
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();
+			optiontitle.setText("Input from list of transitions");
+			optionscreen.add(optiontitle);
+			
+			/* Make text area */
+			textArea = new JTextArea(
+					"ntransition\n" +
+	                "energy1   intensity1\n" +
+	                "energy2   intensity2\n" +
+	                "..."
+	        ,20,20);
+	        textArea.setLineWrap(true);
+	        textArea.setWrapStyleWord(true);
+	        JScrollPane areaScrollPane = new JScrollPane(textArea);
+	        areaScrollPane.setBorder(BorderFactory.createLineBorder(Color.black));
+	        optionscreen.add(areaScrollPane);
+	        
+  		  	JPanel l0 = new JPanel();
+  		  	int iunit = Curveplot.getunit();
+  		  	l0.setLayout(new BoxLayout(l0, BoxLayout.LINE_AXIS));
+  		  	l0.add(new JLabel("Native unit:"));
+  		  	unitsel=new JComboBox();
+  		  	unitsel.addItem("hartree");
+  		  	unitsel.addItem("eV");
+  		  	unitsel.addItem("kcal/mol");
+  		  	unitsel.addItem("kJ/mol");
+  		  	unitsel.addItem("cm-1");
+  		  	//unitsel.addItem("nm");
+  		  	unitsel.setSelectedIndex(iunit);
+  		  	l0.add(unitsel);
+  		  	optionscreen.add(l0);
+	        
+	        /* What curve name? */
+		    JPanel l1 = new JPanel();
+		    l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));
+	        JButton curvebutton = new JButton("Create curve");
+	        l1.add(curvebutton);
+	        curvename = new JTextField("curve name");
+	        l1.add(curvename);
+	        optionscreen.add(l1);
+	        		
+	        /* Read and put to file */
+	        curvebutton.addActionListener(new ActionListener(){
+	        	public void actionPerformed(ActionEvent ae) {
+	        		String filename;
+	        		ncurve++;
+	        		filename="curve"+String.valueOf(ncurve)+".input";
+	        		File inpfile=new File (PlotCAS.WorkDir,filename);
+	        		put_to_file(inpfile,textArea.getText());
+	        		addcurve(curvename.getText(),2,inpfile,"",unitsel.getSelectedIndex());
+	        	}
+	        });
+		    optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+	}
+
+	/* ******************************** */
+	/* *******     XY input    ******** */
+	/* ******************************** */
+	
+	class XYinput implements ActionListener {
+		private JTextField curvename;
+		private JTextArea textArea;
+		private JComboBox unitsel;
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();
+			optiontitle.setText("Input from XY");
+			optionscreen.add(optiontitle);
+			
+			/* Make text area */
+			textArea = new JTextArea(
+	                "x1   y1\n" +
+	                "x2   y2\n" +
+	                "..."
+	        ,20,20);
+	        textArea.setLineWrap(true);
+	        textArea.setWrapStyleWord(true);
+	        JScrollPane areaScrollPane = new JScrollPane(textArea);
+	        areaScrollPane.setBorder(BorderFactory.createLineBorder(Color.black));
+	        optionscreen.add(areaScrollPane);
+	        
+  		  	JPanel l0 = new JPanel();
+  		  	int iunit = Curveplot.getunit();
+  		  	l0.setLayout(new BoxLayout(l0, BoxLayout.LINE_AXIS));
+  		  	l0.add(new JLabel("Native unit:"));
+  		  	unitsel=new JComboBox();
+  		  	unitsel.addItem("hartree");
+  		  	unitsel.addItem("eV");
+  		  	unitsel.addItem("kcal/mol");
+  		  	unitsel.addItem("kJ/mol");
+  		  	unitsel.addItem("cm-1");
+  		  	//unitsel.addItem("nm");
+  		  	unitsel.setSelectedIndex(iunit);
+  		  	l0.add(unitsel);
+  		  	optionscreen.add(l0);
+  		  	
+	        /* What curve name? */
+		    JPanel l1 = new JPanel();
+		    l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));
+	        JButton curvebutton = new JButton("Create curve");
+	        l1.add(curvebutton);
+			curvename = new JTextField("curve name");
+	        l1.add(curvename);
+	        optionscreen.add(l1);
+	        		
+	        /* Read and put to file */
+	        curvebutton.addActionListener(new ActionListener(){
+	        	public void actionPerformed(ActionEvent ae) {
+	        		String filename;
+	        		ncurve++;
+	        		filename="curve"+String.valueOf(ncurve)+".xy";
+	        		//String path = getClass().getClassLoader().getResource(".").getPath();
+	        		File inpfile=new File (PlotCAS.WorkDir,filename);
+	        		put_to_file(inpfile,textArea.getText());
+	        		addcurve(curvename.getText(),3,inpfile,"",unitsel.getSelectedIndex());
+	        	}
+	        });
+		    optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+	}
+
+	/* ******************************** */
+	/* ******* Add/Delete curve ******* */
+	/* ******************************** */
+	
+	public void addcurve(String pname,int ptype,File pfile,String pinfo, int nativeunit)
+	{
+		curve.add(new Curve(pname,ptype,pfile,pinfo,nativeunit));
+		curve.get(ncurve-1).setcolor(Plotgraph.colorgen(ncurve-1));  // Get different colors
+		whichcurve.add(new JCheckBox(pname));
+		whichcurve.get(ncurve-1).setSelected(true);
+		whichcurve.get(ncurve-1).addActionListener(new Refreshplot());
+		setcurvelist();
+		if (ncurve==1)
+		{
+			p = new Plotgraph();
+			init_graph();
+			new Curveplot(0);
+			new Curveplot(ncurve);
+			Plotgraph.set_ascale(Curveplot.geta1(),Curveplot.getda());
+			// Enable menu
+			//plotoptions.setEnabled(true);
+		    optcurve.setEnabled(true);
+		    optplot.setEnabled(true);
+			analysis.setEnabled(true);
+			export.setEnabled(true);
+		}
+		else
+		{
+			new Curveplot(ncurve);
+		}
+		plotscreen.add(p,BorderLayout.CENTER);
+		p.repaint();
+	}
+	public void curve_delete(int icurve)
+	{
+		curve.remove(icurve);
+		whichcurve.remove(icurve);
+		Curveplot.delete(icurve);
+		ncurve=ncurve-1;
+		
+		setcurvelist();
+		
+		if (ncurve<1)
+		{
+		    optcurve.setEnabled(false);
+		    optplot.setEnabled(false);
+			analysis.setEnabled(false);
+			export.setEnabled(false);
+		}
+		else
+		{
+			p.repaint();
+			plotscreen.add(p,BorderLayout.CENTER);
+		}
+	}
+
+	/* ************************************************************ */
+    /* ************************************************************ */
+	/* *********************                  ********************* */
+    /* *********************       PLOT       ********************* */
+	/* *********************                  ********************* */
+	/* ************************************************************ */
+	/* ************************************************************ */
+	
+	/* ******************************** */
+	/* *******  Curve options   ******* */
+	/* ******************************** */
+	
+	class PlotCurvemenu implements ActionListener {
+		private int icurve;
+		private JTextField curvename, offsetfield,yscalefield,colorfield, gausswfield, lorentzfield, lorentz2field, lorentzsplitfield;
+		private JTextArea InfoArea;
+		private boolean isset;
+		private JComboBox broadsel;
+		private JPanel l7;
+		private JPanel l8;
+		private JPanel l9;
+		private JButton deletebutton;
+		private JRadioButton HWHM, Gsigma;
+		
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();
+			optiontitle.setText("Curve specific options");
+			optionscreen.add(optiontitle);
+				
+			icurve=curvesel.getSelectedIndex();
+			isset=true;
+			if (icurve<0){icurve=0;isset=false;};//If first time called, curvesel is not initiated
+			
+			JPanel l0 = new JPanel();
+			l0.add(new JLabel("Options for curve:"));
+			curvesel=new JComboBox();
+			for(int i = 0; i < ncurve; i++)
+			{
+				curvesel.addItem(new comboitem(curve.get(i).getname(),i));
+			}
+			curvesel.setSelectedIndex(icurve);
+			curvesel.addActionListener(new PlotCurvemenu()); // Recursive call
+			l0.add(curvesel);
+			
+			/* Delete curve */
+			deletebutton=new JButton("Delete");
+			deletebutton.addActionListener(new ActionListener()
+			{
+				public void actionPerformed(ActionEvent arg0){
+					icurve=curvesel.getSelectedIndex();
+					int confirm = JOptionPane.showOptionDialog(null, "Are You Sure you want to remove this curve", "Removal Confirmation", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
+					if (confirm==0) {
+						curve_delete(icurve);
+						emptymenu();
+					}
+				}
+			});
+			l0.add(deletebutton);
+			optionscreen.add(l0);
+			
+			JPanel l1 = new JPanel();
+			l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));
+			l1.add(new JLabel("Name:"));
+			curvename = new JTextField(curve.get(icurve).getname());
+			l1.add(curvename);
+			optionscreen.add(l1);
+			
+			optionscreen.add(new JLabel("Informations:"));
+			InfoArea = new JTextArea(curve.get(icurve).getinfo(),5,10);
+			optionscreen.add(InfoArea);
+			
+			JPanel l2 = new JPanel();
+			l2.setLayout(new BoxLayout(l2, BoxLayout.LINE_AXIS));
+			l2.add(new JLabel("Horizontal offset:"));
+			offsetfield = new JTextField(String.valueOf(curve.get(icurve).getxoffset()));
+			l2.add(offsetfield);
+			optionscreen.add(l2);
+			
+			JPanel l3 = new JPanel();
+			l3.setLayout(new BoxLayout(l3, BoxLayout.LINE_AXIS));
+			l3.add(new JLabel("Vertical scaling:"));
+			yscalefield = new JTextField(String.valueOf(curve.get(icurve).getyscale()));
+			l3.add(yscalefield);
+			optionscreen.add(l3);
+			
+			JPanel l4 = new JPanel();
+			l4.setLayout(new BoxLayout(l4, BoxLayout.LINE_AXIS));
+			l4.add(new JLabel("Color (hexadecimal):"));
+			colorfield = new JTextField("#".concat(Integer.toHexString(curve.get(icurve).getcolor().getRGB()).substring(2, 8)));
+			l4.add(colorfield);
+			optionscreen.add(l4);
+			
+			/* Broadening menu */
+			if (curve.get(icurve).gettype()<=2)
+			{
+				optionscreen.add(new JLabel("Broadening"));
+				
+				JPanel l5 = new JPanel();
+				l5.add(new JLabel("Broadening type"));
+				broadsel=new JComboBox();
+				broadsel.addItem("Gaussian broadening");
+				broadsel.addItem("Gaussian + Lorentzian broadening");
+				broadsel.addItem("Gaussian + dual Lorentzian broadening");
+				l5.add(broadsel);
+				optionscreen.add(l5);
+				int ibroad=curve.get(icurve).getbroad().getbroadtype();
+				broadsel.setSelectedIndex(ibroad);
+				
+				broadsel.addActionListener(new ActionListener(){
+				      public void actionPerformed(ActionEvent event){				
+				    	  int ibroad = broadsel.getSelectedIndex();
+				    	  switch (ibroad)
+				    	  {
+				    	  case 0:
+				    		  l7.setVisible(false);
+				    		  l8.setVisible(false);
+				    		  l9.setVisible(false);
+				    		  break;
+				    	  case 1:
+				    		  l7.setVisible(true);
+				    		  l8.setVisible(false);
+				    		  l9.setVisible(false);
+				    		  break;
+				    	  case 2:
+				    		  l7.setVisible(true);
+				    		  l8.setVisible(true);
+				    		  l9.setVisible(true);
+				    		  break;
+				    	  }
+				      }
+				});
+				
+				
+				JPanel l6 = new JPanel();
+				l6.setLayout(new BoxLayout(l6, BoxLayout.LINE_AXIS));
+				l6.add(new JLabel("Gaussian width:"));
+				gausswfield = new JTextField(String.valueOf(curve.get(icurve).getbroad().getgaussw()));
+				l6.add(gausswfield);
+				ButtonGroup GunitGroup = new ButtonGroup();
+				HWHM = new JRadioButton("HWHM");
+				HWHM.setSelected(true);
+				GunitGroup.add(HWHM);
+				l6.add(HWHM);
+				Gsigma = new JRadioButton("sigma");
+				GunitGroup.add(Gsigma);
+				l6.add(Gsigma);
+				optionscreen.add(l6);
+	    		   
+				
+				l7 = new JPanel();
+				l7.setLayout(new BoxLayout(l7, BoxLayout.LINE_AXIS));
+				l7.add(new JLabel("Lorentzian width (HWHM):"));
+				lorentzfield  = new JTextField(String.valueOf(curve.get(icurve).getbroad().getlorw1()));
+				l7.add(lorentzfield);
+				if (ibroad<1) {l7.setVisible(false);}
+				optionscreen.add(l7);
+
+				l8 = new JPanel();
+				l8.setLayout(new BoxLayout(l8, BoxLayout.LINE_AXIS));
+				l8.add(new JLabel("Second lorentzian width:"));
+				lorentz2field = new JTextField(String.valueOf(curve.get(icurve).getbroad().getlorw2()));
+				l8.add(lorentz2field);
+				if (ibroad<2) {l8.setVisible(false);}
+				optionscreen.add(l8);
+					
+				l9 = new JPanel();
+				l9.setLayout(new BoxLayout(l9, BoxLayout.LINE_AXIS));
+				l9.add(new JLabel("Lorentzian split energy"));
+				lorentzsplitfield = new JTextField(String.valueOf(curve.get(icurve).getbroad().getlorsplit()));
+				l9.add(lorentzsplitfield);
+				optionscreen.add(l9);
+				if (ibroad<2) {l9.setVisible(false);}
+			}
+			
+			JButton setbutton=new JButton("Save");
+		    
+			/* Change values and replot the curve */
+			setbutton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent ae) {
+					curve.get(icurve).setname(curvename.getText());
+					curve.get(icurve).setinfo(InfoArea.getText());
+					curve.get(icurve).setxoffset(Float.parseFloat(offsetfield.getText()));
+					curve.get(icurve).setyscale(Float.parseFloat(yscalefield.getText()));
+					curve.get(icurve).setcolor(Color.decode(colorfield.getText()));
+					whichcurve.get(icurve).setText(curvename.getText());
+					whichcurve.get(icurve).setForeground(curve.get(icurve).getcolor());
+					float gauss=Float.parseFloat(gausswfield.getText());
+					if (Gsigma.isSelected())
+					{
+						gauss=gauss*(float)Math.sqrt(2.0*Math.log(2));
+					}
+					if (curve.get(icurve).gettype()<=2)
+					{
+						switch (broadsel.getSelectedIndex())
+						{
+						case 0:
+							curve.get(icurve).getbroad().set_Broadening(gauss);
+							break;
+						case 1:
+							curve.get(icurve).getbroad().set_Broadening(gauss,Float.parseFloat(lorentzfield.getText()));
+							break;
+						case 2:
+							curve.get(icurve).getbroad().set_Broadening(gauss,Float.parseFloat(lorentzfield.getText()),Float.parseFloat(lorentzsplitfield.getText()),Float.parseFloat(lorentz2field.getText()));
+							break;
+						}
+						curDefault.set_dbroad(curve.get(icurve).getbroad());
+					}
+					new Curveplot(icurve+1);
+					p.repaint();
+				}
+			});
+			optionscreen.add(setbutton);
+
+			optionscreen.revalidate();
+			optionscreen.repaint();
+		}
+	}
+	class comboitem //Complicated structure to allow curves with same name to be distinguished
+	{
+		String name;
+		int ID;
+		public comboitem(String pname, int pID){
+			name=pname;
+			ID=pID;
+		}
+		public int getID(){
+			return ID;
+		}
+		@Override
+	    public String toString() {
+			return name;
+		}
+	}
+	
+	/* ******************************** */
+	/* ******* Plotting options ******* */
+	/* ******************************** */
+	
+	class PlotOptmenu implements ActionListener {
+		private JTextField resolinp;
+		private JTextField E1inp;
+		private JTextField E2inp;
+		private JTextField A1inp;
+		private JTextField A2inp;
+		private JComboBox unitsel;
+		
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();
+			optiontitle.setText("General plotting options");
+			optionscreen.add(optiontitle);
+			
+			JPanel l1 = new JPanel();
+		    l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));
+			l1.add(new JLabel("Number of curve points:"));
+			resolinp=new JTextField(String.valueOf(Curveplot.resolution));
+			l1.add(resolinp);
+			optionscreen.add(l1);
+			
+			float x1=Curveplot.getx1();
+			float dE=Curveplot.getxde();
+			JPanel l2 = new JPanel();
+			l2.setLayout(new BoxLayout(l2, BoxLayout.LINE_AXIS));
+			l2.add(new JLabel("Energy range:"));
+			E1inp=new JTextField(String.valueOf(x1));
+			l2.add(E1inp);
+			E2inp=new JTextField(String.valueOf(x1+dE));
+			l2.add(E2inp);
+			optionscreen.add(l2);
+			
+			float A1=Plotgraph.geta1();
+			float dA=Plotgraph.getda();
+			JPanel l3 = new JPanel();
+			l3.setLayout(new BoxLayout(l3, BoxLayout.LINE_AXIS));
+			l3.add(new JLabel("Absorption range:"));
+			A1inp=new JTextField(String.valueOf(A1));
+			l3.add(A1inp);
+			A2inp=new JTextField(String.valueOf(A1+dA));
+			l3.add(A2inp);
+			JButton ascalebutton = new JButton("Adjust to graph");
+			ascalebutton.addActionListener(new ActionListener()
+			{
+				public void actionPerformed(ActionEvent arg0){
+					A1inp.setText(String.valueOf(Curveplot.geta1()));
+					A2inp.setText(String.valueOf(Curveplot.getda()));
+				}
+			});
+			l3.add(ascalebutton);
+			optionscreen.add(l3);
+			
+  		  	JPanel l4 = new JPanel();
+  		  	int iunit = Curveplot.getunit();
+  		  	l4.setLayout(new BoxLayout(l4, BoxLayout.LINE_AXIS));
+  		  	l4.add(new JLabel("Unit:"));
+  		  	unitsel=new JComboBox();
+  		  	unitsel.addItem("hartree");
+  		  	unitsel.addItem("eV");
+  		  	unitsel.addItem("kcal/mol");
+  		  	unitsel.addItem("kJ/mol");
+  		  	unitsel.addItem("cm-1");
+  		  	//unitsel.addItem("nm");
+  		  	unitsel.setSelectedIndex(iunit);
+  		  	l4.add(unitsel);
+  		  	optionscreen.add(l4);
+			
+			JButton plotoptbutton = new JButton("Redraw");
+			plotoptbutton.addActionListener(new Optredraw());
+			optionscreen.add(plotoptbutton);
+
+		    optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+		class Optredraw implements ActionListener{
+			public void actionPerformed(ActionEvent arg0){
+				Curveplot.resolution=Integer.parseInt(resolinp.getText());
+				float x1=Float.parseFloat(E1inp.getText());
+				float x2=Float.parseFloat(E2inp.getText());
+				float dE=x2-x1;
+				Plotgraph.set_xscale(x1,dE);
+				Curveplot.setx(x1,dE);
+				float a1=Float.parseFloat(A1inp.getText());
+				float a2=Float.parseFloat(A2inp.getText());
+				Curveplot.seta(a1,a2-a1);
+				Curveplot.setunit(unitsel.getSelectedIndex());
+				Plotgraph.set_ascale(a1,a2-a1);
+				curDefault.set_graphopts(Curveplot.resolution,unitsel.getSelectedIndex(),x1,dE,a1,a2-a1);
+				Curveplot.reset();
+				for (int i = 0; i <= ncurve; i++)
+				{
+					new Curveplot(i);
+				}
+				p.repaint();
+			}		
+		}
+	}
+
+	/* ************************************************************ */
+    /* ************************************************************ */
+	/* *********************                  ********************* */
+    /* *********************     ANALYSIS     ********************* */
+	/* *********************                  ********************* */
+	/* ************************************************************ */
+	/* ************************************************************ */
+	
+	/* ******************************** */
+	/* ******* Orbital analysis ******* */
+	/* ******************************** */
+	class Analorbmenu implements ActionListener {
+		JButton analysebutton;
+		int[] jcurve;
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();
+			optiontitle.setText("Analysis of orbital contributions");
+			optionscreen.add(optiontitle);
+			
+			JPanel l0 = new JPanel();
+			curvesel=new JComboBox();
+			int j=0;
+			jcurve = new int[ncurve];
+			for(int i = 0; i < ncurve; i++)
+			{
+				if (curve.get(i).gettype()==1)
+				{
+					jcurve[j]=i;
+					j++;
+					curvesel.addItem(new comboitem(curve.get(i).getname(),i));
+				}
+			}
+			l0.add(curvesel);
+			analysebutton= new JButton("Analyse");
+			analysebutton.addActionListener(new ActionListener(){
+				public void actionPerformed(ActionEvent event){
+					int icurve=jcurve[curvesel.getSelectedIndex()];
+					Molcasfile molcas = curve.get(icurve).getmolcas();
+					molcas.analysis(curve.get(icurve));
+				}
+			});
+			l0.add(analysebutton);
+			optionscreen.add(l0);
+			
+		    optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+	}
+	
+	/* ******************************** */
+	/* ******* Curve operations ******* */
+	/* ******************************** */
+	class CurveOp implements ActionListener {
+		private JTextField namefield;
+		public void actionPerformed(ActionEvent arg0){
+			final JTextField[] factors = new JTextField[ncurve];
+			optionscreen.removeAll();
+			optiontitle.setText("Operations on curves");
+			optionscreen.add(optiontitle);
+			
+			for(int i = 0; i < ncurve; i++)
+			{
+				JPanel l0 = new JPanel();
+				l0.add(new JLabel(curve.get(i).getname()));
+				factors[i]=new JTextField("0.0");
+				l0.add(factors[i]);
+				optionscreen.add(l0);
+			}
+					
+			namefield=new JTextField("Name of summed curve");
+			optionscreen.add(namefield);
+			
+			JButton sumbutton= new JButton("Sum");
+			sumbutton.addActionListener(new ActionListener(){
+				public void actionPerformed(ActionEvent event){
+					float tmp,energy;
+					float[] fact=new float[ncurve];
+					for(int i = 0; i < ncurve; i++)
+					{
+						fact[i]=Float.parseFloat(factors[i].getText());
+					}
+					String namecurve=namefield.getText();
+					ncurve++;
+					String filename="curve"+String.valueOf(ncurve)+".input";
+					File output=new File (PlotCAS.WorkDir,filename);
+					try {
+						BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+								new FileOutputStream(output), "utf-8"));
+						// Compute the new curve
+						for(int epos = 0; epos < Curveplot.resolution; epos++)
+						{
+							energy=Curveplot.getx1()+Curveplot.getxde()*Curveplot.plotlist.get(0)[epos];
+							tmp=0;
+							for(int i = 0; i < ncurve-1; i++)
+							{
+								tmp=tmp+Curveplot.plotlist.get(i+1)[epos]*fact[i];
+							}
+							writer.write(String.valueOf(energy)+" "+String.valueOf(tmp)+"\n");
+						}
+						writer.close();
+						addcurve(namecurve,3,output,"",Curveplot.getunit());
+					}
+					catch (IOException e) {
+						e.printStackTrace();
+						JOptionPane.showMessageDialog(new JFrame(), "Failed to create summed curve", "Error",JOptionPane.ERROR_MESSAGE);
+					}
+				}
+			});
+			optionscreen.add(sumbutton);
+			
+		    optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+	}
+	/* ******************************** */
+	/* ***** Integrated intensity ***** */
+	/* ******************************** */
+	class IntIntens implements ActionListener {
+		private JButton integratebutton;
+		private JTextField e1field, e2field;
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();
+			optiontitle.setText("Integrated Intensity");
+			optionscreen.add(optiontitle);
+			
+			JPanel l0 = new JPanel();
+			curvesel=new JComboBox();
+			for(int i = 0; i < ncurve; i++)
+			{
+				curvesel.addItem(new comboitem(curve.get(i).getname(),i));
+			}
+			l0.add(curvesel);
+			optionscreen.add(l0);
+			
+			float x1=Curveplot.getx1();
+			float dE=Curveplot.getxde();
+			JPanel l1 = new JPanel();
+			l1.add(new JLabel("Energy range : from "));
+			e1field=new JTextField(String.valueOf(x1));
+			l1.add(e1field);
+			l1.add(new JLabel("to "));
+			e2field=new JTextField(String.valueOf(x1+dE));
+			l1.add(e2field);
+			optionscreen.add(l1);
+		
+			
+			integratebutton= new JButton("Compute");
+			integratebutton.addActionListener(new ActionListener(){
+				public void actionPerformed(ActionEvent event){
+					int icurve=curvesel.getSelectedIndex();
+					float e1=Float.parseFloat(e1field.getText());
+					float e2=Float.parseFloat(e2field.getText());
+					float intens=Curveplot.getintens(icurve,e1,e2);
+					JTextArea messagearea = new JTextArea("Integrated intensity between "+String.valueOf(e1)+" and "+String.valueOf(e2)+" : "+String.valueOf(intens));
+			    	JScrollPane scrollPane = new JScrollPane(messagearea);
+			    	scrollPane.setPreferredSize( new Dimension( 500, 20 ) );
+			    	JOptionPane.showMessageDialog(null, scrollPane, "Intensity", JOptionPane.PLAIN_MESSAGE); 
+				}
+			});
+			optionscreen.add(integratebutton);
+			
+		    optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+	}
+	/* ******************************** */
+	/* ******* Similarity analysis ******* */
+	/* ******************************** */
+	class Similarity implements ActionListener {
+		JButton analysebutton=new JButton("Analyze");
+		private JComboBox curvesel1=new JComboBox();
+		private JComboBox curvesel2=new JComboBox();
+		private JComboBox methodsel=new JComboBox();
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();
+			optiontitle.setText("Similarity analysis of 2 spectra");
+			optionscreen.add(optiontitle);
+			
+			JPanel l0 = new JPanel();
+			for(int i = 0; i < ncurve; i++)
+			{
+				curvesel1.addItem(new comboitem(curve.get(i).getname(),i));
+			}
+			l0.add(curvesel1);
+
+			for(int i = 0; i < ncurve; i++)
+			{
+				curvesel2.addItem(new comboitem(curve.get(i).getname(),i));
+			}
+			l0.add(curvesel2);
+			optionscreen.add(l0);
+			
+			JPanel l1 = new JPanel();
+  		  	l1.add(new JLabel("Method:"));
+  		  	methodsel.addItem("Euclidian distance");
+  		  	methodsel.addItem("Cosine angle");
+  		  	methodsel.addItem("Integrated intensity");
+  		  	methodsel.addItem("Hybrid");
+  		  	methodsel.setSelectedIndex(0);
+  		  	l1.add(methodsel);
+			optionscreen.add(l1);
+			
+			analysebutton.addActionListener(new ActionListener(){
+				public void actionPerformed(ActionEvent event){
+				}
+			});
+			optionscreen.add(analysebutton);
+			
+		    optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+	}
+	/* ******************************** */
+	/* ******* Scattering ******* */
+	/* ******************************** */
+	class Scatter implements ActionListener {
+		JButton startbutton;
+		int[] jcurve;
+		private JTextField E1inc;
+		private JTextField E2inc;
+		private JTextField E1trans;
+		private JTextField E2trans;
+		private JTextField xresol;
+		private JTextField yresol;
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();
+			optiontitle.setText("2-D scattering plots");
+			optionscreen.add(optiontitle);
+			
+			JPanel l0 = new JPanel();
+			curvesel=new JComboBox();
+			int j=0;
+			jcurve = new int[ncurve];
+			for(int i = 0; i < ncurve; i++)
+			{
+				if (curve.get(i).gettype()==1)
+				{
+					jcurve[j]=i;
+					j++;
+					curvesel.addItem(new comboitem(curve.get(i).getname(),i));
+				}
+			}
+			l0.add(curvesel);
+			
+			JPanel l1 = new JPanel();
+			l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));
+			l1.add(new JLabel("Incident photon energy range:"));
+			E1inc=new JTextField("");
+			l1.add(E1inc);
+			E2inc=new JTextField("");
+			l1.add(E2inc);
+			optionscreen.add(l1);
+			
+			JPanel l2 = new JPanel();
+			l2.setLayout(new BoxLayout(l2, BoxLayout.LINE_AXIS));
+			l2.add(new JLabel("Energy transfer range:"));
+			E1trans=new JTextField("");
+			l2.add(E1trans);
+			E2trans=new JTextField("");
+			l2.add(E2trans);
+			optionscreen.add(l2);
+			
+			JPanel l3 = new JPanel();
+			l3.setLayout(new BoxLayout(l3, BoxLayout.LINE_AXIS));
+			l3.add(new JLabel("Resolution (x,y):"));
+			xresol=new JTextField("100");
+			l3.add(xresol);
+			yresol=new JTextField("100");
+			l3.add(yresol);
+			optionscreen.add(l3);
+			
+			startbutton= new JButton("Plot");
+			startbutton.addActionListener(new ActionListener(){
+				public void actionPerformed(ActionEvent event){
+					int icurve=jcurve[curvesel.getSelectedIndex()];
+					Molcasfile molcas = curve.get(icurve).getmolcas();
+				}
+			});
+			l0.add(startbutton);
+			optionscreen.add(l0);
+			
+		    optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+	}
+	
+	/* ************************************************************ */
+    /* ************************************************************ */
+	/* *********************                  ********************* */
+    /* *********************     EXPORT       ********************* */
+	/* *********************                  ********************* */
+	/* ************************************************************ */
+	/* ************************************************************ */
+	
+	/* ******************************** */
+	/* *******     ExportXY     ******* */
+	/* ******************************** */
+	class ExportXY implements ActionListener {
+		JButton exportbutton;
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();
+			optiontitle.setText("Export curve in XY format");
+			optionscreen.add(optiontitle);
+		
+			JPanel l0 = new JPanel();
+			curvesel=new JComboBox();
+			for(int i = 0; i < ncurve; i++)
+			{
+				curvesel.addItem(new comboitem(curve.get(i).getname(),i));
+			}
+			l0.add(curvesel);
+			exportbutton= new JButton("Export");
+			exportbutton.addActionListener(new ActionListener(){
+			      public void actionPerformed(ActionEvent event){
+			    	  String message="";
+			    	  JTextArea messagearea;
+			    	  float tmp;
+			    	  int icurve=curvesel.getSelectedIndex();
+			    	  for (int j=0; j<Curveplot.resolution; j++) {
+			    		  	tmp=Curveplot.getx1()+Curveplot.getxde()*Curveplot.plotlist.get(0)[j];
+							message=message+String.format("%f", tmp)+"   "+String.format("%6.3e",Curveplot.plotlist.get(icurve+1)[j])+"\n";
+							}
+			    	  messagearea = new JTextArea(message);
+			    	  JScrollPane scrollPane = new JScrollPane(messagearea);
+			    	  scrollPane.setPreferredSize( new Dimension( 500, 500 ) );
+			    	  JOptionPane.showMessageDialog(null, scrollPane, "Curve "+String.valueOf(icurve+1), JOptionPane.PLAIN_MESSAGE);      
+			      }
+			});
+			l0.add(exportbutton);
+			optionscreen.add(l0);
+	        
+			
+		    optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+	}
+	/* ******************************** */
+	/* *******     ExportTrans  ******* */
+	/* ******************************** */
+	class ExportTrans implements ActionListener {
+		JButton exportbutton;
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();
+			optiontitle.setText("Export list of transitions");
+			optionscreen.add(optiontitle);
+		
+			JPanel l0 = new JPanel();
+			curvesel=new JComboBox();
+			for(int i = 0; i < ncurve; i++)
+			{
+				curvesel.addItem(new comboitem(curve.get(i).getname(),i));
+			}
+			l0.add(curvesel);
+			exportbutton= new JButton("Export");
+			exportbutton.addActionListener(new ActionListener(){
+			      public void actionPerformed(ActionEvent event){
+			    	  JTextArea messagearea;
+			    	  int icurve=curvesel.getSelectedIndex();
+			    	  messagearea = new JTextArea();
+			    	  try{
+			    	  messagearea.read(new FileReader(curve.get(icurve).getfile()),"");
+			    	  }
+			    	  catch (Exception e) {
+							e.printStackTrace();
+							JOptionPane.showMessageDialog(new JFrame(), "Failed to print file", "Error",JOptionPane.ERROR_MESSAGE);
+						}
+			    	  JScrollPane scrollPane = new JScrollPane(messagearea);
+			    	  scrollPane.setPreferredSize( new Dimension( 500, 500 ) );
+			    	  JOptionPane.showMessageDialog(null, scrollPane, "Curve "+String.valueOf(icurve+1), JOptionPane.PLAIN_MESSAGE);      
+			      }
+			});
+			l0.add(exportbutton);
+			optionscreen.add(l0);
+	        
+			
+		    optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+	}
+	/* ******************************** */
+	/* *******   Export Image   ******* */
+	/* ******************************** */
+	class ExportImg implements ActionListener {
+		JButton exportbutton;
+		JTextField widthfield, heightfield,lwidthfield;
+		File selectedFile;
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();
+			optiontitle.setText("Export graph picture");
+			optionscreen.add(optiontitle);
+			
+			JPanel l1 = new JPanel();
+			l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));
+			l1.add(new JLabel("Width"));
+			widthfield=new JTextField("1000");
+			l1.add(widthfield);
+			l1.add(new JLabel("Height"));
+			heightfield=new JTextField("600");
+			l1.add(heightfield);
+			optionscreen.add(l1);
+			
+			JPanel l2 = new JPanel();
+			l2.setLayout(new BoxLayout(l2, BoxLayout.LINE_AXIS));
+			l2.add(new JLabel("Line width"));
+			lwidthfield=new JTextField("1");
+			l2.add(lwidthfield);
+			optionscreen.add(l2);
+			
+			
+			JButton openbutton = new JButton("Save as");
+		    openbutton.addActionListener(new ActionListener() {
+		      public void actionPerformed(ActionEvent ae) {
+		    	  JFileChooser fileChooser = new JFileChooser();
+		    	  fileChooser.setCurrentDirectory(curDefault.get_dfile());
+		    	  int returnValue = fileChooser.showSaveDialog(null);
+		    	  if (returnValue == JFileChooser.APPROVE_OPTION) {
+		    		  selectedFile = fileChooser.getSelectedFile();
+		    		  curDefault.set_dfile(selectedFile.getParentFile());
+		    		  int width=Integer.parseInt(widthfield.getText());
+			    	  int height=Integer.parseInt(heightfield.getText());
+			    	  Dimension d=new Dimension(width,height);
+			    	  BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+			    	  Graphics ig2 = bi.createGraphics();
+			    	  new Plotgraph(ig2,d,true,Integer.parseInt(lwidthfield.getText()));
+			    	  try {
+			    		  if (!selectedFile.getName().endsWith(".png"))
+			    		  {
+			    			  selectedFile=new File(selectedFile.getParent(),selectedFile.getName()+".png");
+			    		  }
+			    		  boolean confirmed=true;
+			    		  if (selectedFile.exists())
+			    		  {
+			    			  confirmed=(JOptionPane.showOptionDialog(null, "Do you want to overwrite existing file?", "Overwrite Confirmation", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null)==0);
+			    		  }
+			    		  if (confirmed)
+			    		  {
+			    			  ImageIO.write(bi, "PNG", selectedFile);
+			    		  }
+			    	  }
+			    	  catch (IOException ie) {
+			    	      ie.printStackTrace();
+			    	      JOptionPane.showMessageDialog(new JFrame(), "Failed to export image", "Error",JOptionPane.ERROR_MESSAGE);
+			    	  }
+		    	  }
+		      }
+		    });
+		    optionscreen.add(openbutton);
+			
+			optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+	}
+	
+	/* ************************************************************ */
+    /* ************************************************************ */
+	/* *********************                  ********************* */
+    /* *********************     SETTINGS     ********************* */
+	/* *********************                  ********************* */
+	/* ************************************************************ */
+	/* ************************************************************ */
+	
+	/* ******************************** */
+	/* *******   Set settings   ******* */
+	/* ******************************** */
+	
+	class defaultmenu implements ActionListener {
+		private JTextField resolinp,E1inp,E2inp,A1inp,A2inp,gausswfield, lorentzfield, lorentz2field, lorentzsplitfield,preflabel;
+		private JComboBox unitsel,broadsel,prefsel;
+		private JPanel l7,l8,l9;
+		
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();
+			optiontitle.setText("Save settings");
+			optionscreen.add(optiontitle);	
+			
+			JPanel l1 = new JPanel();
+		    l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));
+			l1.add(new JLabel("Number of curve points:"));
+			resolinp=new JTextField(String.valueOf(Curveplot.resolution));
+			l1.add(resolinp);
+			optionscreen.add(l1);
+			
+			float x1=Curveplot.getx1();
+			float dE=Curveplot.getxde();
+			JPanel l2 = new JPanel();
+			l2.setLayout(new BoxLayout(l2, BoxLayout.LINE_AXIS));
+			l2.add(new JLabel("Energy range:"));
+			E1inp=new JTextField(String.valueOf(x1));
+			l2.add(E1inp);
+			E2inp=new JTextField(String.valueOf(x1+dE));
+			l2.add(E2inp);
+			optionscreen.add(l2);
+			
+			float A1=Plotgraph.geta1();
+			float dA=Plotgraph.getda();
+			JPanel l3 = new JPanel();
+			l3.setLayout(new BoxLayout(l3, BoxLayout.LINE_AXIS));
+			l3.add(new JLabel("Absorption range:"));
+			A1inp=new JTextField(String.valueOf(A1));
+			l3.add(A1inp);
+			A2inp=new JTextField(String.valueOf(A1+dA));
+			l3.add(A2inp);
+			optionscreen.add(l3);
+			
+  		  	JPanel l4 = new JPanel();
+  		  	int iunit = Curveplot.getunit();
+  		  	l4.setLayout(new BoxLayout(l4, BoxLayout.LINE_AXIS));
+  		  	l4.add(new JLabel("Unit:"));
+  		  	unitsel=new JComboBox();
+  		  	unitsel.addItem("hartree");
+  		  	unitsel.addItem("eV");
+  		  	unitsel.addItem("kcal/mol");
+  		  	unitsel.addItem("kJ/mol");
+  		  	unitsel.addItem("cm-1");
+  		  	//unitsel.addItem("nm");
+  		  	unitsel.setSelectedIndex(iunit);
+  		  	l4.add(unitsel);
+  		  	optionscreen.add(l4);
+  		  	
+			JPanel l5 = new JPanel();
+			l5.add(new JLabel("Broadening type"));
+			broadsel=new JComboBox();
+			broadsel.addItem("Gaussian broadening");
+			broadsel.addItem("Gaussian + Lorentzian broadening");
+			broadsel.addItem("Gaussian + dual Lorentzian broadening");
+			l5.add(broadsel);
+			optionscreen.add(l5);
+			int ibroad=curDefault.get_dbroad().getbroadtype();
+			broadsel.setSelectedIndex(ibroad);
+			
+			broadsel.addActionListener(new ActionListener(){
+			      public void actionPerformed(ActionEvent event){				
+			    	  int ibroad = broadsel.getSelectedIndex();
+			    	  switch (ibroad)
+			    	  {
+			    	  case 0:
+			    		  l7.setVisible(false);
+			    		  l8.setVisible(false);
+			    		  l9.setVisible(false);
+			    		  break;
+			    	  case 1:
+			    		  l7.setVisible(true);
+			    		  l8.setVisible(false);
+			    		  l9.setVisible(false);
+			    		  break;
+			    	  case 2:
+			    		  l7.setVisible(true);
+			    		  l8.setVisible(true);
+			    		  l9.setVisible(true);
+			    		  break;
+			    	  }
+			      }
+			});
+			
+			
+			JPanel l6 = new JPanel();
+			l6.setLayout(new BoxLayout(l6, BoxLayout.LINE_AXIS));
+			l6.add(new JLabel("Gaussian width (HWHM):"));
+			gausswfield = new JTextField(String.valueOf(curDefault.get_dbroad().getgaussw()));
+			l6.add(gausswfield);
+			optionscreen.add(l6);
+			
+			l7 = new JPanel();
+			l7.setLayout(new BoxLayout(l7, BoxLayout.LINE_AXIS));
+			l7.add(new JLabel("Lorentzian width (HWHM):"));
+			lorentzfield  = new JTextField(String.valueOf(curDefault.get_dbroad().getlorw1()));
+			l7.add(lorentzfield);
+			if (ibroad<1) {l7.setVisible(false);}
+			optionscreen.add(l7);
+
+			l8 = new JPanel();
+			l8.setLayout(new BoxLayout(l8, BoxLayout.LINE_AXIS));
+			l8.add(new JLabel("Second lorentzian width:"));
+			lorentz2field = new JTextField(String.valueOf(curDefault.get_dbroad().getlorw2()));
+			l8.add(lorentz2field);
+			if (ibroad<2) {l8.setVisible(false);}
+			optionscreen.add(l8);
+				
+			l9 = new JPanel();
+			l9.setLayout(new BoxLayout(l9, BoxLayout.LINE_AXIS));
+			l9.add(new JLabel("Lorentzian split energy"));
+			lorentzsplitfield = new JTextField(String.valueOf(curDefault.get_dbroad().getlorsplit()));
+			l9.add(lorentzsplitfield);
+			optionscreen.add(l9);
+			if (ibroad<2) {l9.setVisible(false);}
+			
+			JPanel l0 = new JPanel();
+			prefsel=new JComboBox();
+			String[] preflist=curDefault.get_preflist();
+			for(int i = 0; i < preflist.length; i++)
+			{
+				if (!preflist[i].equals("Default"))
+				{
+					prefsel.addItem(preflist[i]);
+				}
+			}
+			prefsel.addItem("create new");
+			prefsel.setSelectedItem("create new");
+			l0.add(prefsel);
+			preflabel=new JTextField("Setting name");
+			preflabel.setVisible(true);
+			l0.add(preflabel);
+			
+			prefsel.addActionListener(new ActionListener()
+			{
+				public void actionPerformed(ActionEvent ae) {
+					if (prefsel.getSelectedItem().equals("create new"))
+					{
+						preflabel.setText("Setting name");
+						preflabel.setVisible(true);
+					}
+					else
+					{
+						preflabel.setText(String.valueOf(prefsel.getSelectedItem()));
+						preflabel.setVisible(false);
+					}
+				}
+			});
+			optionscreen.add(l0);
+			
+			
+			JButton savebutton = new JButton("Save setting");
+			savebutton.addActionListener(new ActionListener() {
+			      public void actionPerformed(ActionEvent ae) {
+			    	  Broadening broad=new Broadening();
+			    	  switch (broadsel.getSelectedIndex())
+			    	  {
+			    	  case 0:
+			    		  broad.set_Broadening(Float.parseFloat(gausswfield.getText()));
+			    		  break;
+			    	  case 1:
+			    		  broad.set_Broadening(Float.parseFloat(gausswfield.getText()),Float.parseFloat(lorentzfield.getText()));
+			    		  break;
+			    	  case 2:
+			    		  broad.set_Broadening(Float.parseFloat(gausswfield.getText()),Float.parseFloat(lorentzfield.getText()),Float.parseFloat(lorentzsplitfield.getText()),Float.parseFloat(lorentz2field.getText()));
+			    		  break;
+			    	  }
+			    	  curDefault.set_dbroad(broad);
+			    	  
+			    	  float x1=Float.parseFloat(E1inp.getText());
+			    	  float x2=Float.parseFloat(E2inp.getText());
+			    	  float dE=x2-x1;
+			    	  float a1=Float.parseFloat(A1inp.getText());
+			    	  float a2=Float.parseFloat(A2inp.getText());
+			    	  curDefault.set_graphopts(Integer.parseInt(resolinp.getText()),unitsel.getSelectedIndex(),x1,dE,a1,a2-a1);
+
+			    	  String label=preflabel.getText();
+			    	  boolean confirm=true;
+			    	  if (curDefault.labelexists(label))
+			    	  {
+			    		  confirm=(JOptionPane.showOptionDialog(null, "Do you want to overwrite existing setting?", "Overwrite Confirmation", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null)==0);
+			    	  }
+			    	  if (confirm)
+			    	  {
+			    		  curDefault.add_default(label); 
+			    	  }
+			      }
+			});
+			optionscreen.add(savebutton);
+			
+			optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+	}
+	
+	/* ******************************** */
+	/* *******   Load settings  ******* */
+	/* ******************************** */
+	
+	class loaddefaultmenu implements ActionListener {
+		JComboBox prefsel;
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();
+			optiontitle.setText("Load settings");
+			optionscreen.add(optiontitle);
+			
+			JPanel l0 = new JPanel();
+			prefsel=new JComboBox();
+			String[] preflist=curDefault.get_preflist();
+			for(int i = 0; i < preflist.length; i++)
+			{
+				if (!preflist[i].equals("Default"))
+				{
+					prefsel.addItem(preflist[i]);
+				}
+			}
+			l0.add(prefsel);
+			optionscreen.add(l0);
+			
+			JButton loadbutton = new JButton("Load");
+			optionscreen.add(loadbutton);
+			loadbutton.addActionListener(new ActionListener()
+			{
+				public void actionPerformed(ActionEvent arg0)
+				{
+					curDefault.readdefaults(String.valueOf(prefsel.getSelectedItem()));
+					Curveplot.reset();
+					for (int i = 0; i <= ncurve; i++)
+					{
+						new Curveplot(i);
+					}
+					if (ncurve>0){p.repaint();}
+				}
+			});
+			
+			optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+	}
+			
+	/* ************************************************************ */
+    /* ************************************************************ */
+	/* *********************                  ********************* */
+    /* ********************* PLOTTING WINDOW  ********************* */
+	/* *********************                  ********************* */
+	/* ************************************************************ */
+	/* ************************************************************ */
+	
+	class Refreshplot implements ActionListener {
+		public void actionPerformed(ActionEvent arg0){
+			p.repaint();
+		}
+	}
+
+	public void setcurvelist()
+	{
+		JPanel curvelist = new JPanel();
+		curvelist.setLayout(new WrapLayout());
+		plotscreen.removeAll();
+		for(int i = 0; i < ncurve; i++)
+		{
+			whichcurve.get(i).setForeground(curve.get(i).getcolor());
+			curvelist.add(whichcurve.get(i));
+		}
+		plotscreen.add(curvelist,BorderLayout.NORTH);
+	    plotscreen.revalidate();
+	    plotscreen.repaint();
+	}
+
+	public void init_graph(){
+		/*  Find min and max energies */
+		float minE=0;
+		float maxE=0;
+		if (curve.get(0).gettype()>0) // obsolete...
+		{
+			try {
+				BufferedReader reader = new BufferedReader(new FileReader(curve.get(0).getfile()));
+				String text;
+				float n;
+				boolean isntrans=(curve.get(0).gettype()==2);
+				boolean is1=true;
+				 while ((text = reader.readLine()) != null) {
+					 if (!text.startsWith("#"))
+					 {
+						 n=Float.parseFloat(text.trim().split(" ")[0]);
+						 if (isntrans)
+						 {
+							 isntrans=false;
+						 }
+						 else
+						 {
+							 if (is1)
+							 {
+								 minE=n;
+								 maxE=n;
+								 is1=false;
+							 }
+							 minE=Math.min(n,minE);
+							 maxE=Math.max(n,maxE);
+						 }
+					 }
+				 }
+				 reader.close();
+			} catch (IOException e) {
+			    e.printStackTrace();
+			    JOptionPane.showMessageDialog(new JFrame(), "Failed to initialize the graph", "Error",JOptionPane.ERROR_MESSAGE);
+			}
+		}
+		/*    Determine optimal parameters */
+		float gap=maxE-minE;
+		if (curve.get(0).gettype()<3)
+		{
+			//add some space on the sides
+			minE=minE-gap*0.05f;
+			gap=gap*1.1f;		
+		}
+		Plotgraph.set_xscale(minE,gap);
+		Curveplot.setx(minE,gap);
+		
+	}
+	/* ******************************** */
+	/* ******* File management ******** */
+	/* ******************************** */
+	
+	public void put_to_file(File pfile,String ptext){
+		try {
+			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
+					new FileOutputStream(pfile), "utf-8"));
+			writer.write(ptext);
+			writer.close();
+		} catch (IOException ex) {
+			JOptionPane.showMessageDialog(new JFrame(), "Failed to save this file", "Error",JOptionPane.ERROR_MESSAGE);
+			ex.printStackTrace();
+		}
+	}
+}
