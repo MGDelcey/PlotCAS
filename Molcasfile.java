@@ -17,19 +17,13 @@ public class Molcasfile {
 	private File intfile; // Intermediate "summary" file
 	private int nrSFstates=0;
 	private int nrSOCstates=0;
-	private int fromGS=1;
-	private int toGS=1;
-	private float Boltztemp=0;
-	private boolean isdipole=false;
-	private boolean isquadrupole=false;
-	private boolean isveloc=false;
 	private boolean isRASSI=false;
 	private boolean isRASSCF=false;
 	private boolean isCASPT2=false;
 	private boolean isMSCASPT2=false;
-	private boolean isSF=false;
-	private boolean isSOC=false;
-	private boolean isboltz=false;
+	private boolean isdipole=true;
+	private boolean isquadrupole=true;
+	private boolean isveloc=true;
 	private int nsym=1;
 	private String[] symlabel=null;
 	private int[] nact=null;
@@ -333,7 +327,7 @@ public class Molcasfile {
     /* ******************************** */
     /* *******  to transition  ******** */
     /* ******************************** */
-	public void totransition(boolean dSF, boolean dSOC, boolean ddip, boolean dveloc,boolean dquad, boolean dboltz, float dtemp, File output)
+	public void totransition(boolean dSF, boolean dSOC, boolean ddip, boolean dveloc,boolean dquad, boolean dboltz, float dtemp, File output, int fromGS, int toGS)
 	{
 		int iunit=Curveplot.getunit();
 		double Escale=1;
@@ -345,18 +339,10 @@ public class Molcasfile {
 		int i1,i2;
 		double tmp;
 		int ntrans=0;
-		isSF=dSF;
-		isSOC=dSOC;
-		isveloc=isveloc;
-		setdipole(ddip);
-		setquadrupole(dquad);
-		setveloc(dveloc);
 		if (dSF) {stop="*SF"; energies=new double[nrSFstates];nrofstates=nrSFstates;}
 		if (dSOC) {stop="*SOC";energies=new double[nrSOCstates];nrofstates=nrSOCstates;}
 		Escale=Curveplot.unitfactor(iunit);
-		Boltztemp=dtemp;
-		isboltz=dboltz;
-		double kT=0.000086173325*Boltztemp/27.211399;
+		double kT=0.000086173325*dtemp/27.211399;
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(intfile));
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
@@ -376,7 +362,7 @@ public class Molcasfile {
 					double norm=0;
 					for (int i = 0; i <= toGS-fromGS; i++)
 					{
-						if (isboltz)
+						if (dboltz)
 						{
 							boltz[i]=Math.exp(-(energies[i+fromGS-1]-energies[fromGS-1])/kT);
 						}
@@ -447,9 +433,13 @@ public class Molcasfile {
 		int jroot=0;int jroot2=0;
 		int i1, i2;
 		int ntrans=0;
-		boolean ddip=icurve.getmolcas().isdipole;
-		boolean dquad=icurve.getmolcas().isquadrupole;
-		boolean dveloc=icurve.getmolcas().isveloc;
+		boolean ddip=icurve.transition.isdipole;
+		boolean dquad=icurve.transition.isquadrupole;
+		boolean dveloc=icurve.transition.isveloc;
+		boolean isSF=icurve.transition.isSF;
+		boolean isSOC=icurve.transition.isSOC;
+		int fromGS=icurve.transition.fromGS;
+		int toGS=icurve.transition.toGS;
 		double tmp;
 		try {
 			int ncurve=Window.ncurve;
@@ -462,7 +452,7 @@ public class Molcasfile {
 						new FileOutputStream(inpfile[j]), "utf-8"));
 			}
 			BufferedReader reader = new BufferedReader(new FileReader(intfile));
-			BufferedReader readert = new BufferedReader(new FileReader(icurve.getfile()));
+			BufferedReader readert = new BufferedReader(new FileReader(icurve.transition.getfile()));
 			while ((text = reader.readLine()) != null) {
 				/* Read RASSCF NatOrb */
 				if (text.contains("*RASSCF"))
@@ -700,8 +690,7 @@ public class Molcasfile {
 				writer[j].write("#"+String.valueOf(ntrans));
 				writer[j].close();
 				String curvename=icurve.getname()+" "+String.valueOf(icounter)+symlabel[jsym];
-				Window.ncurve++;
-				PlotCAS.fen.addcurve(curvename,1,inpfile[j],"",Curveplot.getunit());
+				//PlotCAS.fen.addcurve(curvename,1,inpfile[j],"",Curveplot.getunit());
 				icounter++;
 			}
 		}
@@ -715,7 +704,7 @@ public class Molcasfile {
     /* ******************************** */
 	public void toscatter()
 	{
-		int iunit=Curveplot.getunit();
+		/*int iunit=Curveplot.getunit();
 		double Escale=1;
 		String text;
 		String stop="*SF";
@@ -729,8 +718,8 @@ public class Molcasfile {
 		if (isSOC) {stop="*SOC";energies=new double[nrSOCstates];nrofstates=nrSOCstates;}
 		Escale=Curveplot.unitfactor(iunit);
 		double kT=0.000086173325*Boltztemp/27.211399;
-		File output=new File (PlotCAS.WorkDir,"tmp");/* Temporary just to prevent fail */
-		try {
+		File output=new File (PlotCAS.WorkDir,"tmp");*//* Temporary just to prevent fail */
+	/*	try {
 			BufferedReader reader = new BufferedReader(new FileReader(intfile));
 			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
 					new FileOutputStream(output), "utf-8"));
@@ -743,9 +732,9 @@ public class Molcasfile {
 						text = reader.readLine();
 						energies[i]=Double.parseDouble(text.trim());
 					}
-					first=true;
+					first=true;*/
 					/* Boltzman */
-					boltz=new double[toGS-fromGS+1];
+					/*boltz=new double[toGS-fromGS+1];
 					double norm=0;
 					for (int i = 0; i <= toGS-fromGS; i++)
 					{
@@ -801,7 +790,7 @@ public class Molcasfile {
 		catch (IOException e) {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(new JFrame(), "Failed to create spectrum from Molcas file", "Error",JOptionPane.ERROR_MESSAGE);
-		}
+		}*/
 	}
     /* ******************************** */
     /* *******  Gets and sets  ******** */
@@ -831,25 +820,13 @@ public class Molcasfile {
 	{
 		return isdipole;
 	}
-	public void setdipole(boolean ddip)
-	{
-		isdipole=ddip;
-	}
 	public boolean isveloc()
 	{
 		return isveloc;
 	}
-	public void setveloc(boolean dveloc)
-	{
-		isveloc=dveloc;
-	}
 	public boolean isquadrupole()
 	{
 		return isquadrupole;
-	}
-	public void setquadrupole(boolean dquad)
-	{
-		isquadrupole=dquad;
 	}
 	public int getSFstates()
 	{
@@ -858,10 +835,5 @@ public class Molcasfile {
 	public int getSOCstates()
 	{
 		return nrSOCstates;
-	}
-	public void setfromto(int i1,int i2)
-	{
-		fromGS=i1;
-		toGS=i2;
 	}
 }

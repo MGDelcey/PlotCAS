@@ -10,47 +10,36 @@ import java.io.File;
  */
 public class Curve {
 	private String curvename;
-	private File curvefile;
 	private String curveinfo;
 	private int curvetype;
 	private float xoffset;
 	private float yscale;
 	private Color ccolor;
 	private Broadening broad;
-	private Molcasfile molcas;
+	public Transition transition;
 	private int nativeunit;
 	/* Default */
 	public Curve(){ 
 		  curvename="";
-		  curvefile=new File("","");
 		  curveinfo="";
 		  curvetype=0;
 		  xoffset=0;
 		  yscale=1;
 		  ccolor=Color.black;
 		  broad=Window.curDefault.get_dbroad();
-		  molcas=new Molcasfile();
 		  nativeunit=Curveplot.getunit();
 	}
 	/* With parameters */
-	public Curve(String pName, int ptype, File pFile, String pInfo, int punit){ 
+	public Curve(String pName, int ptype, Transition trans,String pInfo, int punit){ 
 		  curvename=pName;
 		  curvetype=ptype;
-		  curvefile=pFile;
 		  curveinfo=pInfo;
+		  transition=trans;
 		  xoffset=0;
 		  yscale=1;
 		  ccolor=Color.black;
 		  broad=Window.curDefault.get_dbroad();
 		  nativeunit=punit;
-		  if (ptype==1)
-		  {
-			  molcas=new Molcasfile(pFile);
-		  }
-		  else
-		  {
-			  molcas=new Molcasfile();
-		  }
 	}
 	
 	public String getname() {
@@ -61,9 +50,6 @@ public class Curve {
 	}
 	public String getinfo() {
 		return curveinfo;
-	}
-	public File getfile() {
-		return curvefile;
 	}
 	public int gettype() {
 		return curvetype;
@@ -77,9 +63,6 @@ public class Curve {
 	public Color getcolor() {
 		return ccolor;
 	}
-	public Molcasfile getmolcas() {
-		return molcas;
-	}
 	public int getunit() {
 		return nativeunit;
 	}
@@ -88,9 +71,6 @@ public class Curve {
 	}
 	public void setinfo(String pinfo) {
 		curveinfo=pinfo;
-	}
-	public void setfile(File pfile) {
-		curvefile=pfile;
 	}
 	public void settype(int ptype) {
 		curvetype=ptype;
@@ -106,8 +86,5 @@ public class Curve {
 	}
 	public void setbroad(Broadening pbroad) {
 		broad=pbroad;
-	}
-	public void setmolcas(Molcasfile pfile) {
-		molcas=pfile;
 	}
 }

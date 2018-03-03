@@ -48,7 +48,7 @@ public class Curveplot {
 				firstline=false;
 				String text2="0";
 				try {
-					BufferedReader reader = new BufferedReader(new FileReader(Window.curve.get(i-1).getfile()));
+					BufferedReader reader = new BufferedReader(new FileReader(Window.curve.get(i-1).transition.getfile()));
 					while ((text = reader.readLine()) != null) {
 						text2=text;
 					}
@@ -66,7 +66,7 @@ public class Curveplot {
 			case 2:
 				int itrans;
 				try {
-					BufferedReader reader = new BufferedReader(new FileReader(Window.curve.get(i-1).getfile()));
+					BufferedReader reader = new BufferedReader(new FileReader(Window.curve.get(i-1).transition.getfile()));
 					float a1,e1;
 					itrans=0;
 					/* Read translist*/
@@ -198,7 +198,7 @@ public class Curveplot {
 				break;
 			case 3:
 				try {
-					BufferedReader reader = new BufferedReader(new FileReader(Window.curve.get(i-1).getfile()));
+					BufferedReader reader = new BufferedReader(new FileReader(Window.curve.get(i-1).transition.getfile()));
 					float e1=estart;
 					float a1=0;
 					float e2=0;

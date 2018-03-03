@@ -376,7 +376,6 @@ public class Window extends JFrame {
 			    		  
 			    		  curvebutton.addActionListener(new ActionListener() {
 						      public void actionPerformed(ActionEvent ae) {
-						    	  String filename;
 						    	  boolean isSF,isSOC,isdip,isveloc,isquad;
 						    	  if (molcasinput.getSFstates()<=0){isSF=false;}
 						    	  else {isSF=SFbutton.isSelected();}
@@ -388,18 +387,13 @@ public class Window extends JFrame {
 						    	  else {isquad=quadrupolebutton.isSelected();}
 						    	  if (!molcasinput.isveloc()){isveloc=false;}
 						    	  else {isveloc=velocbutton.isSelected();}
-						    	  ncurve++;
-						    	  filename="curve"+String.valueOf(ncurve)+".input";
-						    	  File inpfile=new File (PlotCAS.WorkDir,filename);
 						    	  float temp=0;
 						    	  if (boltzbutton.isSelected())
 						    	  {
 						    		  temp=Float.parseFloat(boltztemp.getText());
 						    	  }
-						    	  molcasinput.setfromto(Integer.parseInt(ground1.getText()),Integer.parseInt(ground2.getText()));
-						    	  molcasinput.totransition(isSF,isSOC, isdip,isveloc,isquad,boltzbutton.isSelected(),temp,inpfile);
-						    	  addcurve(curvename.getText(),1,inpfile,"",Curveplot.getunit());
-						    	  curve.get(ncurve-1).setmolcas(molcasinput);
+						    	  Transition trans=new Transition(molcasinput,isSF,isSOC, isdip,isveloc,isquad,boltzbutton.isSelected(),temp,Integer.parseInt(ground1.getText()),Integer.parseInt(ground2.getText()));new Transition(molcasinput,isSF,isSOC, isdip,isveloc,isquad,boltzbutton.isSelected(),temp,Integer.parseInt(ground1.getText()),Integer.parseInt(ground2.getText()));
+						    	  addcurve(curvename.getText(),1,trans,"",Curveplot.getunit());
 						      }
 			    		  });
 			    		  
@@ -476,12 +470,8 @@ public class Window extends JFrame {
 	        /* Read and put to file */
 	        curvebutton.addActionListener(new ActionListener(){
 	        	public void actionPerformed(ActionEvent ae) {
-	        		String filename;
-	        		ncurve++;
-	        		filename="curve"+String.valueOf(ncurve)+".input";
-	        		File inpfile=new File (PlotCAS.WorkDir,filename);
-	        		put_to_file(inpfile,textArea.getText());
-	        		addcurve(curvename.getText(),2,inpfile,"",unitsel.getSelectedIndex());
+	        		Transition trans=new Transition(textArea.getText());
+	        		addcurve(curvename.getText(),2,trans,"",unitsel.getSelectedIndex());
 	        	}
 	        });
 		    optionscreen.revalidate();
@@ -541,13 +531,8 @@ public class Window extends JFrame {
 	        /* Read and put to file */
 	        curvebutton.addActionListener(new ActionListener(){
 	        	public void actionPerformed(ActionEvent ae) {
-	        		String filename;
-	        		ncurve++;
-	        		filename="curve"+String.valueOf(ncurve)+".xy";
-	        		//String path = getClass().getClassLoader().getResource(".").getPath();
-	        		File inpfile=new File (PlotCAS.WorkDir,filename);
-	        		put_to_file(inpfile,textArea.getText());
-	        		addcurve(curvename.getText(),3,inpfile,"",unitsel.getSelectedIndex());
+	        		Transition trans=new Transition(textArea.getText());
+	        		addcurve(curvename.getText(),3,trans,"",unitsel.getSelectedIndex());
 	        	}
 	        });
 		    optionscreen.revalidate();
@@ -559,9 +544,10 @@ public class Window extends JFrame {
 	/* ******* Add/Delete curve ******* */
 	/* ******************************** */
 	
-	public void addcurve(String pname,int ptype,File pfile,String pinfo, int nativeunit)
+	public void addcurve(String pname,int ptype,Transition trans, String pinfo, int nativeunit)
 	{
-		curve.add(new Curve(pname,ptype,pfile,pinfo,nativeunit));
+		ncurve++;
+		curve.add(new Curve(pname,ptype,trans,pinfo,nativeunit));
 		curve.get(ncurve-1).setcolor(Plotgraph.colorgen(ncurve-1));  // Get different colors
 		whichcurve.add(new JCheckBox(pname));
 		whichcurve.get(ncurve-1).setSelected(true);
@@ -983,7 +969,7 @@ public class Window extends JFrame {
 			analysebutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
 					int icurve=jcurve[curvesel.getSelectedIndex()];
-					Molcasfile molcas = curve.get(icurve).getmolcas();
+					Molcasfile molcas = curve.get(icurve).transition.getmolcas();
 					molcas.analysis(curve.get(icurve));
 				}
 			});
@@ -1046,7 +1032,7 @@ public class Window extends JFrame {
 							writer.write(String.valueOf(energy)+" "+String.valueOf(tmp)+"\n");
 						}
 						writer.close();
-						addcurve(namecurve,3,output,"",Curveplot.getunit());
+						//addcurve(namecurve,3,output,"",Curveplot.getunit());
 					}
 					catch (IOException e) {
 						e.printStackTrace();
@@ -1221,7 +1207,7 @@ public class Window extends JFrame {
 			startbutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
 					int icurve=jcurve[curvesel.getSelectedIndex()];
-					Molcasfile molcas = curve.get(icurve).getmolcas();
+					//Molcasfile molcas = curve.get(icurve).getmolcas();
 				}
 			});
 			l0.add(startbutton);
@@ -1306,7 +1292,7 @@ public class Window extends JFrame {
 			    	  int icurve=curvesel.getSelectedIndex();
 			    	  messagearea = new JTextArea();
 			    	  try{
-			    	  messagearea.read(new FileReader(curve.get(icurve).getfile()),"");
+			    	  messagearea.read(new FileReader(curve.get(icurve).transition.getfile()),"");
 			    	  }
 			    	  catch (Exception e) {
 							e.printStackTrace();
@@ -1692,7 +1678,7 @@ public class Window extends JFrame {
 		if (curve.get(0).gettype()>0) // obsolete...
 		{
 			try {
-				BufferedReader reader = new BufferedReader(new FileReader(curve.get(0).getfile()));
+				BufferedReader reader = new BufferedReader(new FileReader(curve.get(0).transition.getfile()));
 				String text;
 				float n;
 				boolean isntrans=(curve.get(0).gettype()==2);
@@ -1735,20 +1721,5 @@ public class Window extends JFrame {
 		Plotgraph.set_xscale(minE,gap);
 		Curveplot.setx(minE,gap);
 		
-	}
-	/* ******************************** */
-	/* ******* File management ******** */
-	/* ******************************** */
-	
-	public void put_to_file(File pfile,String ptext){
-		try {
-			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
-					new FileOutputStream(pfile), "utf-8"));
-			writer.write(ptext);
-			writer.close();
-		} catch (IOException ex) {
-			JOptionPane.showMessageDialog(new JFrame(), "Failed to save this file", "Error",JOptionPane.ERROR_MESSAGE);
-			ex.printStackTrace();
-		}
 	}
 }
