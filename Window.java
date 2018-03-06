@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
@@ -15,7 +14,6 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
-import javax.swing.ImageIcon;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -61,8 +59,6 @@ public class Window extends JFrame {
 	public static ArrayList<Curve> curve = new ArrayList<Curve>();
 	public static ArrayList<JCheckBox> whichcurve = new ArrayList<JCheckBox>();
 	
-	private JComboBox curvesel=new JComboBox();
-	
 	public static Default curDefault=new Default();
 	
     /* ******************************** */
@@ -85,7 +81,7 @@ public class Window extends JFrame {
                 	for (int i = 0; i < fList.length; i++) {
                 	    String pes = fList[i].getName();
                 	    if (pes.endsWith(".xy")||pes.endsWith(".input")||pes.startsWith("molcas")) {
-                	        boolean success = (fList[i].delete());
+                	        fList[i].delete();
                 	    }
                 	}
                 	PlotCAS.WorkDir.delete();
@@ -137,12 +133,12 @@ public class Window extends JFrame {
 	    JMenuItem intensity = new JMenuItem("Integrated intensity");
 	    intensity.addActionListener(new IntIntens());
 	    analysis.add(intensity);
-	    JMenuItem scatter = new JMenuItem("Scattering");
+	    /*JMenuItem scatter = new JMenuItem("Scattering");
 	    scatter.addActionListener(new Scatter());
 	    analysis.add(scatter);
 	    JMenuItem similarity = new JMenuItem("Similarity");
 	    similarity.addActionListener(new Similarity());
-	    analysis.add(similarity);
+	    analysis.add(similarity);*/
 	    menuBar.add(analysis);
 	    
 	    export = new JMenu("Export");
@@ -424,7 +420,7 @@ public class Window extends JFrame {
 	class Transinput implements ActionListener {
 		private JTextArea textArea;
 		private JTextField curvename;
-		private JComboBox unitsel;
+		private JComboBox<String> unitsel;
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
 			optiontitle.setText("Input from list of transitions");
@@ -447,7 +443,7 @@ public class Window extends JFrame {
   		  	int iunit = Curveplot.getunit();
   		  	l0.setLayout(new BoxLayout(l0, BoxLayout.LINE_AXIS));
   		  	l0.add(new JLabel("Native unit:"));
-  		  	unitsel=new JComboBox();
+  		  	unitsel=new JComboBox<String>();
   		  	unitsel.addItem("hartree");
   		  	unitsel.addItem("eV");
   		  	unitsel.addItem("kcal/mol");
@@ -486,7 +482,7 @@ public class Window extends JFrame {
 	class XYinput implements ActionListener {
 		private JTextField curvename;
 		private JTextArea textArea;
-		private JComboBox unitsel;
+		private JComboBox<String> unitsel;
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
 			optiontitle.setText("Input from XY");
@@ -508,7 +504,7 @@ public class Window extends JFrame {
   		  	int iunit = Curveplot.getunit();
   		  	l0.setLayout(new BoxLayout(l0, BoxLayout.LINE_AXIS));
   		  	l0.add(new JLabel("Native unit:"));
-  		  	unitsel=new JComboBox();
+  		  	unitsel=new JComboBox<String>();
   		  	unitsel.addItem("hartree");
   		  	unitsel.addItem("eV");
   		  	unitsel.addItem("kcal/mol");
@@ -613,8 +609,8 @@ public class Window extends JFrame {
 		private int icurve;
 		private JTextField curvename, offsetfield,yscalefield,colorfield, gausswfield, lorentzfield, lorentz2field, lorentzsplitfield;
 		private JTextArea InfoArea;
-		private boolean isset;
-		private JComboBox broadsel;
+		private JComboBox<String> broadsel;
+		private CurveSel selector=new CurveSel(0);;
 		private JPanel l7;
 		private JPanel l8;
 		private JPanel l9;
@@ -626,27 +622,21 @@ public class Window extends JFrame {
 			optiontitle.setText("Curve specific options");
 			optionscreen.add(optiontitle);
 				
-			icurve=curvesel.getSelectedIndex();
-			isset=true;
-			if (icurve<0){icurve=0;isset=false;};//If first time called, curvesel is not initiated
+			icurve=selector.index();
+			selector=new CurveSel(0);
+			selector.select(icurve);
 			
 			JPanel l0 = new JPanel();
 			l0.add(new JLabel("Options for curve:"));
-			curvesel=new JComboBox();
-			for(int i = 0; i < ncurve; i++)
-			{
-				curvesel.addItem(new comboitem(curve.get(i).getname(),i));
-			}
-			curvesel.setSelectedIndex(icurve);
-			curvesel.addActionListener(new PlotCurvemenu()); // Recursive call
-			l0.add(curvesel);
+			l0.add(selector.Box());
+			
 			
 			/* Delete curve */
 			deletebutton=new JButton("Delete");
 			deletebutton.addActionListener(new ActionListener()
 			{
 				public void actionPerformed(ActionEvent arg0){
-					icurve=curvesel.getSelectedIndex();
+					icurve=selector.index();
 					int confirm = JOptionPane.showOptionDialog(null, "Are You Sure you want to remove this curve", "Removal Confirmation", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
 					if (confirm==0) {
 						curve_delete(icurve);
@@ -696,7 +686,7 @@ public class Window extends JFrame {
 				
 				JPanel l5 = new JPanel();
 				l5.add(new JLabel("Broadening type"));
-				broadsel=new JComboBox();
+				broadsel=new JComboBox<String>();
 				broadsel.addItem("Gaussian broadening");
 				broadsel.addItem("Gaussian + Lorentzian broadening");
 				broadsel.addItem("Gaussian + dual Lorentzian broadening");
@@ -841,7 +831,7 @@ public class Window extends JFrame {
 		private JTextField E2inp;
 		private JTextField A1inp;
 		private JTextField A2inp;
-		private JComboBox unitsel;
+		private JComboBox<String> unitsel;
 		
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
@@ -890,7 +880,7 @@ public class Window extends JFrame {
   		  	int iunit = Curveplot.getunit();
   		  	l4.setLayout(new BoxLayout(l4, BoxLayout.LINE_AXIS));
   		  	l4.add(new JLabel("Unit:"));
-  		  	unitsel=new JComboBox();
+  		  	unitsel=new JComboBox<String>();
   		  	unitsel.addItem("hartree");
   		  	unitsel.addItem("eV");
   		  	unitsel.addItem("kcal/mol");
@@ -945,30 +935,20 @@ public class Window extends JFrame {
 	/* ******************************** */
 	class Analorbmenu implements ActionListener {
 		JButton analysebutton;
-		int[] jcurve;
+		private CurveSel selector;
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
 			optiontitle.setText("Analysis of orbital contributions");
 			optionscreen.add(optiontitle);
 			
 			JPanel l0 = new JPanel();
-			curvesel=new JComboBox();
-			int j=0;
-			jcurve = new int[ncurve];
-			for(int i = 0; i < ncurve; i++)
-			{
-				if (curve.get(i).gettype()==1)
-				{
-					jcurve[j]=i;
-					j++;
-					curvesel.addItem(new comboitem(curve.get(i).getname(),i));
-				}
-			}
-			l0.add(curvesel);
+			selector=new CurveSel(1);
+			l0.add(selector.Box());
+
 			analysebutton= new JButton("Analyse");
 			analysebutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
-					int icurve=jcurve[curvesel.getSelectedIndex()];
+					int icurve=selector.index();
 					Molcasfile molcas = curve.get(icurve).transition.getmolcas();
 					molcas.analysis(curve.get(icurve));
 				}
@@ -1014,9 +994,8 @@ public class Window extends JFrame {
 						fact[i]=Float.parseFloat(factors[i].getText());
 					}
 					String namecurve=namefield.getText();
-					ncurve++;
-					String filename="curve"+String.valueOf(ncurve)+".input";
-					File output=new File (PlotCAS.WorkDir,filename);
+	        			Transition trans=new Transition();
+	        			File output=trans.getfile();
 					try {
 						BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
 								new FileOutputStream(output), "utf-8"));
@@ -1025,14 +1004,14 @@ public class Window extends JFrame {
 						{
 							energy=Curveplot.getx1()+Curveplot.getxde()*Curveplot.plotlist.get(0)[epos];
 							tmp=0;
-							for(int i = 0; i < ncurve-1; i++)
+							for(int i = 0; i < ncurve; i++)
 							{
 								tmp=tmp+Curveplot.plotlist.get(i+1)[epos]*fact[i];
 							}
 							writer.write(String.valueOf(energy)+" "+String.valueOf(tmp)+"\n");
 						}
 						writer.close();
-						//addcurve(namecurve,3,output,"",Curveplot.getunit());
+		        			addcurve(namecurve,3,trans,"",Curveplot.getunit());
 					}
 					catch (IOException e) {
 						e.printStackTrace();
@@ -1052,18 +1031,15 @@ public class Window extends JFrame {
 	class IntIntens implements ActionListener {
 		private JButton integratebutton;
 		private JTextField e1field, e2field;
+		private CurveSel selector;
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
 			optiontitle.setText("Integrated Intensity");
 			optionscreen.add(optiontitle);
 			
 			JPanel l0 = new JPanel();
-			curvesel=new JComboBox();
-			for(int i = 0; i < ncurve; i++)
-			{
-				curvesel.addItem(new comboitem(curve.get(i).getname(),i));
-			}
-			l0.add(curvesel);
+			selector=new CurveSel(0);
+			l0.add(selector.Box());
 			optionscreen.add(l0);
 			
 			float x1=Curveplot.getx1();
@@ -1081,7 +1057,7 @@ public class Window extends JFrame {
 			integratebutton= new JButton("Compute");
 			integratebutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
-					int icurve=curvesel.getSelectedIndex();
+					int icurve=selector.index();
 					float e1=Float.parseFloat(e1field.getText());
 					float e2=Float.parseFloat(e2field.getText());
 					float intens=Curveplot.getintens(icurve,e1,e2);
@@ -1102,26 +1078,19 @@ public class Window extends JFrame {
 	/* ******************************** */
 	class Similarity implements ActionListener {
 		JButton analysebutton=new JButton("Analyze");
-		private JComboBox curvesel1=new JComboBox();
-		private JComboBox curvesel2=new JComboBox();
-		private JComboBox methodsel=new JComboBox();
+		private CurveSel selector1;
+		private CurveSel selector2;
+		private JComboBox<String> methodsel=new JComboBox<String>();
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
 			optiontitle.setText("Similarity analysis of 2 spectra");
 			optionscreen.add(optiontitle);
 			
 			JPanel l0 = new JPanel();
-			for(int i = 0; i < ncurve; i++)
-			{
-				curvesel1.addItem(new comboitem(curve.get(i).getname(),i));
-			}
-			l0.add(curvesel1);
-
-			for(int i = 0; i < ncurve; i++)
-			{
-				curvesel2.addItem(new comboitem(curve.get(i).getname(),i));
-			}
-			l0.add(curvesel2);
+			selector1=new CurveSel(0);
+			l0.add(selector1.Box());
+			selector2=new CurveSel(0);
+			l0.add(selector2.Box());
 			optionscreen.add(l0);
 			
 			JPanel l1 = new JPanel();
@@ -1149,32 +1118,21 @@ public class Window extends JFrame {
 	/* ******************************** */
 	class Scatter implements ActionListener {
 		JButton startbutton;
-		int[] jcurve;
 		private JTextField E1inc;
 		private JTextField E2inc;
 		private JTextField E1trans;
 		private JTextField E2trans;
 		private JTextField xresol;
 		private JTextField yresol;
+		private CurveSel selector;
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
 			optiontitle.setText("2-D scattering plots");
 			optionscreen.add(optiontitle);
 			
 			JPanel l0 = new JPanel();
-			curvesel=new JComboBox();
-			int j=0;
-			jcurve = new int[ncurve];
-			for(int i = 0; i < ncurve; i++)
-			{
-				if (curve.get(i).gettype()==1)
-				{
-					jcurve[j]=i;
-					j++;
-					curvesel.addItem(new comboitem(curve.get(i).getname(),i));
-				}
-			}
-			l0.add(curvesel);
+			selector=new CurveSel(1);
+			l0.add(selector.Box());
 			
 			JPanel l1 = new JPanel();
 			l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));
@@ -1206,7 +1164,7 @@ public class Window extends JFrame {
 			startbutton= new JButton("Plot");
 			startbutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
-					int icurve=jcurve[curvesel.getSelectedIndex()];
+					//int icurve=selector.index();
 					//Molcasfile molcas = curve.get(icurve).getmolcas();
 				}
 			});
@@ -1231,25 +1189,23 @@ public class Window extends JFrame {
 	/* ******************************** */
 	class ExportXY implements ActionListener {
 		JButton exportbutton;
+		private CurveSel selector;
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
 			optiontitle.setText("Export curve in XY format");
 			optionscreen.add(optiontitle);
 		
 			JPanel l0 = new JPanel();
-			curvesel=new JComboBox();
-			for(int i = 0; i < ncurve; i++)
-			{
-				curvesel.addItem(new comboitem(curve.get(i).getname(),i));
-			}
-			l0.add(curvesel);
+			selector=new CurveSel(0);
+			l0.add(selector.Box());
+			
 			exportbutton= new JButton("Export");
 			exportbutton.addActionListener(new ActionListener(){
 			      public void actionPerformed(ActionEvent event){
 			    	  String message="";
 			    	  JTextArea messagearea;
 			    	  float tmp;
-			    	  int icurve=curvesel.getSelectedIndex();
+			    	  int icurve=selector.index();
 			    	  for (int j=0; j<Curveplot.resolution; j++) {
 			    		  	tmp=Curveplot.getx1()+Curveplot.getxde()*Curveplot.plotlist.get(0)[j];
 							message=message+String.format("%f", tmp)+"   "+String.format("%6.3e",Curveplot.plotlist.get(icurve+1)[j])+"\n";
@@ -1273,23 +1229,21 @@ public class Window extends JFrame {
 	/* ******************************** */
 	class ExportTrans implements ActionListener {
 		JButton exportbutton;
+		private CurveSel selector;
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
 			optiontitle.setText("Export list of transitions");
 			optionscreen.add(optiontitle);
 		
 			JPanel l0 = new JPanel();
-			curvesel=new JComboBox();
-			for(int i = 0; i < ncurve; i++)
-			{
-				curvesel.addItem(new comboitem(curve.get(i).getname(),i));
-			}
-			l0.add(curvesel);
+			selector=new CurveSel(0);
+			l0.add(selector.Box());
+			
 			exportbutton= new JButton("Export");
 			exportbutton.addActionListener(new ActionListener(){
 			      public void actionPerformed(ActionEvent event){
 			    	  JTextArea messagearea;
-			    	  int icurve=curvesel.getSelectedIndex();
+			    	  int icurve=selector.index();
 			    	  messagearea = new JTextArea();
 			    	  try{
 			    	  messagearea.read(new FileReader(curve.get(icurve).transition.getfile()),"");
@@ -1399,7 +1353,7 @@ public class Window extends JFrame {
 	
 	class defaultmenu implements ActionListener {
 		private JTextField resolinp,E1inp,E2inp,A1inp,A2inp,gausswfield, lorentzfield, lorentz2field, lorentzsplitfield,preflabel;
-		private JComboBox unitsel,broadsel,prefsel;
+		private JComboBox<String> unitsel,broadsel,prefsel;
 		private JPanel l7,l8,l9;
 		
 		public void actionPerformed(ActionEvent arg0){
@@ -1440,7 +1394,7 @@ public class Window extends JFrame {
   		  	int iunit = Curveplot.getunit();
   		  	l4.setLayout(new BoxLayout(l4, BoxLayout.LINE_AXIS));
   		  	l4.add(new JLabel("Unit:"));
-  		  	unitsel=new JComboBox();
+  		  	unitsel=new JComboBox<String>();
   		  	unitsel.addItem("hartree");
   		  	unitsel.addItem("eV");
   		  	unitsel.addItem("kcal/mol");
@@ -1453,7 +1407,7 @@ public class Window extends JFrame {
   		  	
 			JPanel l5 = new JPanel();
 			l5.add(new JLabel("Broadening type"));
-			broadsel=new JComboBox();
+			broadsel=new JComboBox<String>();
 			broadsel.addItem("Gaussian broadening");
 			broadsel.addItem("Gaussian + Lorentzian broadening");
 			broadsel.addItem("Gaussian + dual Lorentzian broadening");
@@ -1519,7 +1473,7 @@ public class Window extends JFrame {
 			if (ibroad<2) {l9.setVisible(false);}
 			
 			JPanel l0 = new JPanel();
-			prefsel=new JComboBox();
+			prefsel=new JComboBox<String>();
 			String[] preflist=curDefault.get_preflist();
 			for(int i = 0; i < preflist.length; i++)
 			{
@@ -1602,14 +1556,14 @@ public class Window extends JFrame {
 	/* ******************************** */
 	
 	class loaddefaultmenu implements ActionListener {
-		JComboBox prefsel;
+		JComboBox<String> prefsel;
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
 			optiontitle.setText("Load settings");
 			optionscreen.add(optiontitle);
 			
 			JPanel l0 = new JPanel();
-			prefsel=new JComboBox();
+			prefsel=new JComboBox<String>();
 			String[] preflist=curDefault.get_preflist();
 			for(int i = 0; i < preflist.length; i++)
 			{
@@ -1669,6 +1623,38 @@ public class Window extends JFrame {
 		plotscreen.add(curvelist,BorderLayout.NORTH);
 	    plotscreen.revalidate();
 	    plotscreen.repaint();
+	}
+	 class CurveSel {
+		 JComboBox<comboitem> curvesel=new JComboBox<comboitem>();
+		 int[] jcurve = new int[ncurve];
+		 public CurveSel(int itype)
+		 {
+			 int j=0;
+			 for(int i = 0; i < ncurve; i++)
+			 {
+				 if (itype==0||curve.get(i).gettype()==itype)
+				 {
+					 jcurve[j]=i;
+					 curvesel.addItem(new comboitem(curve.get(i).getname(),i));
+					 j++;
+				 }
+			 }
+		 }
+		public JComboBox<comboitem> Box()
+		{
+			return(curvesel);
+		}
+		public int index()
+		{
+			int result=curvesel.getSelectedIndex();
+			if (result<0) {result=0;}
+			else { result=jcurve[result];}
+			return result;
+		}
+		public void select(int icurve)
+		{
+			curvesel.setSelectedIndex(icurve);
+		}
 	}
 
 	public void init_graph(){

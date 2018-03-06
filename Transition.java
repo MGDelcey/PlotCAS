@@ -28,9 +28,14 @@ public class Transition {
 	/* List input */
 	public Transition(String text)
 	{
-		islist=true;
+		islist=false;
 		transfile();
 		put_to_file(transitionfile,text);
+	}
+	public Transition()
+	{
+		islist=false;
+		transfile();
 	}
 	/* MOLCAS input */
 	public Transition(Molcasfile input,boolean dSF, boolean dSOC, boolean ddip, boolean dveloc,boolean dquad, boolean dboltz, float dtemp,int i1,int i2)
@@ -51,7 +56,7 @@ public class Transition {
 	}
 	private void transfile()
 	{
-		String filename="curve"+String.valueOf(PlotCAS.fen.ncurve+1)+".xy";
+		String filename="curve"+String.valueOf(Window.ncurve+1)+".xy";
 		transitionfile=new File (PlotCAS.WorkDir,filename);
 	}
 	

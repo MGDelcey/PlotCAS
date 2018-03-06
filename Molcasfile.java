@@ -390,7 +390,7 @@ public class Molcasfile {
 						{
 							i2=Integer.parseInt(text.trim().split(" +")[1]);
 							tmp=Double.parseDouble(text.trim().split(" +")[2])*boltz[i1-fromGS];
-							writer.write(String.valueOf(Escale*(energies[i2-1]-energies[i1-1]))+" "+String.valueOf(tmp)+"\n");
+							writer.write(String.valueOf(Escale*(energies[i2-1]-energies[i1-1]))+" "+String.valueOf(tmp)+" "+String.valueOf(i2)+" "+String.valueOf(i1)+"\n");
 							ntrans++;
 						}
 						else
@@ -399,7 +399,7 @@ public class Molcasfile {
 							if (i2>=fromGS&&i2<=toGS)
 							{
 								tmp=Double.parseDouble(text.trim().split(" +")[2])*boltz[i2-fromGS];
-								writer.write(String.valueOf(Escale*(energies[i1-1]-energies[i2-1]))+" "+String.valueOf(tmp)+"\n");
+								writer.write(String.valueOf(Escale*(energies[i1-1]-energies[i2-1]))+" "+String.valueOf(tmp)+" "+String.valueOf(i1)+" "+String.valueOf(i2)+"\n");
 								ntrans++;
 							}
 						}

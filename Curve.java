@@ -1,7 +1,6 @@
 package plotCAS;
 
 import java.awt.Color;
-import java.io.File;
 
 /* Type is the origin of the curve
  1 - MOLCAS log file
