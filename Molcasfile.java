@@ -7,6 +7,8 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.util.ArrayList;
+import java.util.Collections;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -15,7 +17,7 @@ public class Molcasfile {
 	private static int nfiles;
 	private File inputfile; // MOLCAS log file
 	private File intfile; // Intermediate "summary" file
-	private int nrSFstates=0;
+	public int nrSFstates=0;
 	private int nrSOCstates=0;
 	private boolean isRASSI=false;
 	private boolean isRASSCF=false;
@@ -26,8 +28,11 @@ public class Molcasfile {
 	private boolean isveloc=true;
 	private int nsym=1;
 	private String[] symlabel=null;
+	public String[] orblabel=null;
 	private int[] nact=null;
-	private int ntact=0;
+	public int ntact=0;
+	public int nspin;
+	public int spinlist[];
 	private int maxRASSCF=0;
 	
 	public Molcasfile() {
@@ -199,13 +204,56 @@ public class Molcasfile {
 					writer.write("*RASSI\n");
 					isRASSI=true;
 					boolean skip=false;
+					int njob=0;
+					ArrayList<Integer> spin = new ArrayList<Integer>();
 					while ((text = reader.readLine()) != null) {
+						if (text.contains("Specific data for"))
+						{
+							while ((text = reader.readLine()) != null) {
+								if (text.contains("SPIN MULTIPLICITY:")) {break;}
+							}
+							spin.add(Integer.parseInt(text.trim().split(" +")[2]));
+							njob++;
+							
+						}
 						if (text.contains("Stop Module:")) {break;}
 						if (text.contains("Nr of states:"))
 						{
 							index = text.indexOf("Nr of states:")+13;
 							nrSFstates=Integer.parseInt(text.substring(index).trim());
+							
+							Collections.sort(spin);
+							nspin=1;
+							for (int i = 1; i < njob; i++)
+							{
+								if (spin.get(i-1)!=spin.get(i)) {nspin++;}
+							}
+							spinlist= new int[nspin];
+							int ispin=0;
+							spinlist[0]=spin.get(0);
+							for (int i = 1; i < njob; i++)
+							{
+								if (spin.get(i-1)!=spin.get(i))
+								{
+									ispin++;
+									spinlist[ispin]=spin.get(i);
+								}
+							}
+							int[] statespin=new int[nrSFstates];
 							writer.write("*SF\n");
+							int istate=0;
+							for (int i = 0; i < nrSFstates/20+1; i++)
+							{
+								text = reader.readLine();
+								text = reader.readLine();
+								text = reader.readLine();
+								for (int j = 0; j < Math.min(20,nrSFstates-20*i); j++)
+								{
+									statespin[istate]=spin.get(Integer.parseInt(text.trim().split(" +")[j+1])-1);
+									istate++;
+								}
+								text = reader.readLine();
+							}
 							while ((text = reader.readLine()) != null) {
 								if (text.contains("::")) {break;}
 							}
@@ -213,7 +261,7 @@ public class Molcasfile {
 							{
 								index = text.indexOf("energy:")+7;
 								tmp=Double.parseDouble(text.substring(index).trim());
-								writer.write(String.valueOf(tmp)+"\n");
+								writer.write(String.valueOf(tmp)+" "+statespin[i]+"\n");
 								text = reader.readLine();
 							}
 						}
@@ -354,7 +402,7 @@ public class Molcasfile {
 					for (int i = 0; i < nrofstates; i++)
 					{
 						text = reader.readLine();
-						energies[i]=Double.parseDouble(text.trim());
+						energies[i]=Double.parseDouble(text.trim().split(" +")[0]);
 					}
 					first=true;
 					/* Boltzman */
@@ -419,40 +467,51 @@ public class Molcasfile {
     /* ******************************** */
     /* *******     Analysis    ******** */
     /* ******************************** */
-	public void analysis(Curve icurve)
+	public float[][] spinocc()
+	{
+		float[][] natorb=new float[nrSFstates][nspin];
+		String text;
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(intfile));
+			while ((text = reader.readLine()) != null) {
+				/* Read RASSCF NatOrb */
+				if (text.contains("*SF"))
+				{
+					
+				}
+			}
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(new JFrame(), "Failed to analyse Molcas file", "Error",JOptionPane.ERROR_MESSAGE);
+			}
+		return natorb;
+	}
+	public float[][] orbocc()
 	{
 		String text;
 		float[][] natorb=new float[nrSFstates][ntact]; //assumes sum of CAS = nr SF states
 		float[][] tmporb=new float[maxRASSCF][ntact];
 		int[] index=new int[maxRASSCF];
 		float[][] caspt2=new float[maxRASSCF][5];
-		double[][] SFintens=new double[nrSFstates][nrSFstates];
-		File[] inpfile=new File[ntact];
-		BufferedWriter[] writer = new BufferedWriter[ntact];
 		int iroot=0;
 		int jroot=0;int jroot2=0;
-		int i1, i2;
-		int ntrans=0;
-		boolean ddip=icurve.transition.isdipole;
-		boolean dquad=icurve.transition.isquadrupole;
-		boolean dveloc=icurve.transition.isveloc;
-		boolean isSF=icurve.transition.isSF;
-		boolean isSOC=icurve.transition.isSOC;
-		int fromGS=icurve.transition.fromGS;
-		int toGS=icurve.transition.toGS;
-		double tmp;
+		/* Create orbital labels */
+		int icounter=1;
+		int jsym=0;
+		orblabel=new String[ntact];
+        for (int j=0; j<ntact; j++)
+        {
+            while (icounter>nact[jsym])
+            {
+                    icounter=1;
+                    jsym++;
+            }
+            orblabel[j]=String.valueOf(icounter)+symlabel[jsym];
+            icounter++;
+        }
 		try {
-			int ncurve=Window.ncurve;
-			for (int j=0; j<ntact; j++)
-			{
-				ncurve++;
-				String filename="curve"+String.valueOf(ncurve)+".input";
-				inpfile[j]=new File (PlotCAS.WorkDir,filename);
-				writer[j] = new BufferedWriter(new OutputStreamWriter(
-						new FileOutputStream(inpfile[j]), "utf-8"));
-			}
 			BufferedReader reader = new BufferedReader(new FileReader(intfile));
-			BufferedReader readert = new BufferedReader(new FileReader(icurve.transition.getfile()));
 			while ((text = reader.readLine()) != null) {
 				/* Read RASSCF NatOrb */
 				if (text.contains("*RASSCF"))
@@ -537,167 +596,15 @@ public class Molcasfile {
 						/* Check that this is smaller or equal to iroot */
 					}
 				}
-				if (text.contains("*RASSI"))
-				{
-					boolean first=true;
-					while ((text = reader.readLine()) != null)
-					{
-						/* Do spin-free analysis */
-						if (first&&((text.contains("*Velocity")&&ddip&&dveloc)||(text.contains("*Dipole")&&ddip&&!dveloc)||(text.contains("*Quadrupole")&&dquad)))
-						{
-							text = reader.readLine();
-							while (!text.startsWith("*"))
-							{
-								i1=Integer.parseInt(text.trim().split(" +")[0]);
-								if (isSF)
-								{
-									if (i1>=fromGS&&i1<=toGS)
-									{
-										i2=Integer.parseInt(text.trim().split(" +")[1]);
-										text=readert.readLine();
-										tmp=Double.parseDouble(text.trim().split(" +")[1]);
-										double energy=Double.parseDouble(text.trim().split(" +")[0]);
-										for (int iorb=0; iorb<ntact;iorb++)
-										{
-											writer[iorb].write(String.valueOf(energy)+" "+String.valueOf(tmp*(natorb[i2-1][iorb]-natorb[i1-1][iorb]))+"\n");
-										}
-										ntrans++;
-									}
-									else
-									{
-										i2=Integer.parseInt(text.trim().split(" +")[1]);
-										if (i2>=fromGS&&i2<=toGS)
-										{
-											text=readert.readLine();
-											tmp=Double.parseDouble(text.trim().split(" +")[1]);
-											double energy=Double.parseDouble(text.trim().split(" +")[0]);
-											for (int iorb=0; iorb<ntact;iorb++)
-											{
-												writer[iorb].write(String.valueOf(energy)+" "+String.valueOf(tmp*(natorb[i1-1][iorb]-natorb[i2-1][iorb]))+"\n");
-											}
-											ntrans++;
-										}
-									}
-									
-								}
-								else
-								{
-									// Just store it for SOC calculations
-									i2=Integer.parseInt(text.trim().split(" +")[1]);
-									tmp=Double.parseDouble(text.trim().split(" +")[2]);
-									SFintens[i1-1][i2-1]=tmp;
-									SFintens[i2-1][i1-1]=tmp;
-								}
-								text = reader.readLine();
-							}
-						}
-						if (text.contains("*SOC"))
-						{
-							first=false;
-							if (isSOC)
-							{
-								float[][] SFtoSOC=new float[nrSOCstates][nrSFstates];
-								//float[][] inter=new float[nrSOCstates][nrSFstates];
-								float tmp2,tmp3;
-								//Read energies
-								for (int i=0; i<nrSOCstates; i++)
-								{
-									text = reader.readLine();
-								}
-								//Read coefs
-								for (int i=0; i<nrSOCstates; i++)
-								{
-									text = reader.readLine();
-									int n=text.trim().split(" +").length/2;
-									float norm;
-									norm=0;
-									for (int j=0; j<n; j++)
-									{
-										i2=Integer.parseInt(text.trim().split(" +")[2*j])-1;
-										tmp2=Float.parseFloat(text.trim().split(" +")[2*j+1]);
-										SFtoSOC[i][i2]=tmp2;
-										norm+=tmp2;
-									}
-									//Renormalize (if incomplete)
-									for (int j=0; j<nrSFstates; j++)
-									{
-										SFtoSOC[i][j]=SFtoSOC[i][j]/norm;
-									}
-									
-								}
-								while ((text = reader.readLine()) != null)
-								{
-									if ((text.contains("*Velocity")&&ddip&&dveloc)||(text.contains("*Dipole")&&ddip&&!dveloc)||(text.contains("*Quadrupole")&&dquad))
-									{
-										text = reader.readLine();
-										while (!text.startsWith("*"))
-										{
-											i1=Integer.parseInt(text.trim().split(" +")[0]);
-											//System.out.print(text+"\n");
-											if (i1>=fromGS&&i1<=toGS)
-											{
-												i1-=1;
-												i2=Integer.parseInt(text.trim().split(" +")[1])-1;
-												text=readert.readLine();
-												//System.out.print(text+"\n");
-												tmp=Double.parseDouble(text.trim().split(" +")[1]);
-												double energy=Double.parseDouble(text.trim().split(" +")[0]);
-												//now
-												for (int iorb=0; iorb<ntact;iorb++)
-												{
-													tmp3=0;
-													tmp2=0;
-													//inefficient loop, but less storage. Let's try
-													for (int i=0; i<nrSFstates;i++)
-													{
-														for (int j=0; j<nrSFstates;j++)
-														{
-															tmp2+=SFintens[i][j]*SFtoSOC[i1][i]*SFtoSOC[i2][j];
-															tmp3+=(SFintens[i][j]*(natorb[j][iorb]-natorb[i][iorb]))*SFtoSOC[i1][i]*SFtoSOC[i2][j];
-														}
-													}
-													if (tmp2>0)
-													{
-														writer[iorb].write(String.valueOf(energy)+" "+String.valueOf(tmp3/tmp2*tmp)+"\n");
-													}
-													else
-													{
-														writer[iorb].write(String.valueOf(energy)+" "+String.valueOf(0.0)+"\n");
-													}
-												}
-												ntrans++;
-											}
-											text = reader.readLine();
-										}
-									}
-								}
-							}
-						}
-					}
-				}
+
 			}
 			reader.close();
-			readert.close();
-			int icounter=1;
-			int jsym=0;
-			for (int j=0; j<ntact; j++)
-			{
-				while (icounter>nact[jsym])
-				{
-					icounter=1;
-					jsym++;
-				}
-				writer[j].write("#"+String.valueOf(ntrans));
-				writer[j].close();
-				String curvename=icurve.getname()+" "+String.valueOf(icounter)+symlabel[jsym];
-				//PlotCAS.fen.addcurve(curvename,1,inpfile[j],"",Curveplot.getunit());
-				icounter++;
-			}
 		}
 		catch (IOException e) {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(new JFrame(), "Failed to analyse Molcas file", "Error",JOptionPane.ERROR_MESSAGE);
 		}
+		return natorb;
 	}
     /* ******************************** */
     /* *******     Scatter     ******** */

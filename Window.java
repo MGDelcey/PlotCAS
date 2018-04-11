@@ -59,6 +59,7 @@ public class Window extends JFrame {
 	public static ArrayList<Curve> curve = new ArrayList<Curve>();
 	public static ArrayList<JCheckBox> whichcurve = new ArrayList<JCheckBox>();
 	
+	private CurveSel plotselector=new CurveSel(0);
 	public static Default curDefault=new Default();
 	
     /* ******************************** */
@@ -317,6 +318,10 @@ public class Window extends JFrame {
 			    			  SOCbutton.setSelected(true);
 			    			  SFSOCGroup.add(SOCbutton);
 			    			  l2.add(SOCbutton);
+			    		  }
+			    		  else
+			    		  {
+			    			  SFbutton.setSelected(true);
 			    		  }
 			    		  smallbox.add(l2);
 			    		  
@@ -610,7 +615,6 @@ public class Window extends JFrame {
 		private JTextField curvename, offsetfield,yscalefield,colorfield, gausswfield, lorentzfield, lorentz2field, lorentzsplitfield;
 		private JTextArea InfoArea;
 		private JComboBox<String> broadsel;
-		private CurveSel selector=new CurveSel(0);;
 		private JPanel l7;
 		private JPanel l8;
 		private JPanel l9;
@@ -622,13 +626,14 @@ public class Window extends JFrame {
 			optiontitle.setText("Curve specific options");
 			optionscreen.add(optiontitle);
 				
-			icurve=selector.index();
-			selector=new CurveSel(0);
-			selector.select(icurve);
+			icurve=plotselector.index();
+			plotselector=new CurveSel(0);
+			plotselector.select(icurve);
+			plotselector.curvesel.addActionListener(new PlotCurvemenu()); // Recursive call
 			
 			JPanel l0 = new JPanel();
 			l0.add(new JLabel("Options for curve:"));
-			l0.add(selector.Box());
+			l0.add(plotselector.Box());
 			
 			
 			/* Delete curve */
@@ -636,7 +641,7 @@ public class Window extends JFrame {
 			deletebutton.addActionListener(new ActionListener()
 			{
 				public void actionPerformed(ActionEvent arg0){
-					icurve=selector.index();
+					icurve=plotselector.index();
 					int confirm = JOptionPane.showOptionDialog(null, "Are You Sure you want to remove this curve", "Removal Confirmation", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null);
 					if (confirm==0) {
 						curve_delete(icurve);
@@ -766,6 +771,7 @@ public class Window extends JFrame {
 			/* Change values and replot the curve */
 			setbutton.addActionListener(new ActionListener() {
 				public void actionPerformed(ActionEvent ae) {
+					icurve=plotselector.index();
 					curve.get(icurve).setname(curvename.getText());
 					curve.get(icurve).setinfo(InfoArea.getText());
 					curve.get(icurve).setxoffset(Float.parseFloat(offsetfield.getText()));
@@ -773,13 +779,13 @@ public class Window extends JFrame {
 					curve.get(icurve).setcolor(Color.decode(colorfield.getText()));
 					whichcurve.get(icurve).setText(curvename.getText());
 					whichcurve.get(icurve).setForeground(curve.get(icurve).getcolor());
-					float gauss=Float.parseFloat(gausswfield.getText());
-					if (Gsigma.isSelected())
-					{
-						gauss=gauss*(float)Math.sqrt(2.0*Math.log(2));
-					}
 					if (curve.get(icurve).gettype()<=2)
 					{
+						float gauss=Float.parseFloat(gausswfield.getText());
+						if (Gsigma.isSelected())
+						{
+							gauss=gauss*(float)Math.sqrt(2.0*Math.log(2));
+						}
 						switch (broadsel.getSelectedIndex())
 						{
 						case 0:
@@ -934,7 +940,7 @@ public class Window extends JFrame {
 	/* ******* Orbital analysis ******* */
 	/* ******************************** */
 	class Analorbmenu implements ActionListener {
-		JButton analysebutton;
+		JButton spinbutton,orbitalbutton;
 		private CurveSel selector;
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
@@ -945,15 +951,28 @@ public class Window extends JFrame {
 			selector=new CurveSel(1);
 			l0.add(selector.Box());
 
-			analysebutton= new JButton("Analyse");
-			analysebutton.addActionListener(new ActionListener(){
+			orbitalbutton= new JButton("Orbital analysis");
+			orbitalbutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
 					int icurve=selector.index();
-					Molcasfile molcas = curve.get(icurve).transition.getmolcas();
-					molcas.analysis(curve.get(icurve));
+					curve.get(icurve).transition.analysis(curve.get(icurve).getname(),0);
+					/*Molcasfile molcas = curve.get(icurve).transition.getmolcas();
+					molcas.analysis(curve.get(icurve));*/
 				}
 			});
-			l0.add(analysebutton);
+			l0.add(orbitalbutton);
+			optionscreen.add(l0);
+			
+			spinbutton= new JButton("Spin analysis");
+			spinbutton.addActionListener(new ActionListener(){
+				public void actionPerformed(ActionEvent event){
+					int icurve=selector.index();
+					curve.get(icurve).transition.analysis(curve.get(icurve).getname(),1);
+					/*Molcasfile molcas = curve.get(icurve).transition.getmolcas();
+					molcas.analysis(curve.get(icurve));*/
+				}
+			});
+			l0.add(spinbutton);
 			optionscreen.add(l0);
 			
 		    optionscreen.revalidate();
@@ -989,9 +1008,14 @@ public class Window extends JFrame {
 				public void actionPerformed(ActionEvent event){
 					float tmp,energy;
 					float[] fact=new float[ncurve];
-					for(int i = 0; i < ncurve; i++)
+					int size=factors.length;
+					for(int i = 0; i < size; i++)
 					{
 						fact[i]=Float.parseFloat(factors[i].getText());
+					}
+					for(int i = size; i < ncurve; i++)
+					{
+						fact[i]=0;
 					}
 					String namecurve=namefield.getText();
 	        			Transition trans=new Transition();

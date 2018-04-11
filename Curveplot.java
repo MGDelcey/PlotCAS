@@ -62,6 +62,7 @@ public class Curveplot {
 					JOptionPane.showMessageDialog(new JFrame(), "Failed to plot graph", "Error",JOptionPane.ERROR_MESSAGE);
 				}
 				ntrans=Integer.parseInt(text2.substring(1));
+				Window.curve.get(i-1).transition.ntrans=ntrans;
 				translist=new float[2][ntrans];
 			case 2:
 				int itrans;
@@ -76,6 +77,7 @@ public class Curveplot {
 							if (firstline)
 							{
 								ntrans=Integer.parseInt(text.trim().split(" ")[0]);
+								Window.curve.get(i-1).transition.ntrans=ntrans;
 								translist=new float[2][ntrans];
 								firstline=false;
 							}
