@@ -38,11 +38,11 @@ public class Molcasfile {
 	public Molcasfile() {
 	}
 	
-	public Molcasfile(File pFile){
+	public Molcasfile(File WorkDir,File pFile){
 		inputfile=pFile;
 		nfiles++;
 		String filename="molcas"+String.valueOf(nfiles);
-		intfile=new File(PlotCAS.WorkDir,filename);
+		intfile=new File(WorkDir,filename);
 		browselog();
 	}
 	
@@ -375,9 +375,8 @@ public class Molcasfile {
     /* ******************************** */
     /* *******  to transition  ******** */
     /* ******************************** */
-	public void totransition(boolean dSF, boolean dSOC, boolean ddip, boolean dveloc,boolean dquad, boolean dboltz, float dtemp, File output, int fromGS, int toGS)
+	public void totransition(int iunit, boolean dSF, boolean dSOC, boolean ddip, boolean dveloc,boolean dquad, boolean dboltz, float dtemp, File output, int fromGS, int toGS)
 	{
-		int iunit=Curveplot.getunit();
 		double Escale=1;
 		String text;
 		String stop="*SF";
@@ -480,6 +479,7 @@ public class Molcasfile {
 					
 				}
 			}
+			reader.close();
 		}
 		catch (IOException e) {
 			e.printStackTrace();

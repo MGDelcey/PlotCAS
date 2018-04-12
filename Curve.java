@@ -18,7 +18,7 @@ public class Curve {
 	public Transition transition;
 	private int nativeunit;
 	/* Default */
-	public Curve(){ 
+	/*public Curve(){ 
 		  curvename="";
 		  curveinfo="";
 		  curvetype=0;
@@ -27,7 +27,7 @@ public class Curve {
 		  ccolor=Color.black;
 		  broad=Window.curDefault.get_dbroad();
 		  nativeunit=Curveplot.getunit();
-	}
+	}*/
 	/* With parameters */
 	public Curve(String pName, int ptype, Transition trans,String pInfo, int punit){ 
 		  curvename=pName;

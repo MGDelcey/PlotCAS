@@ -87,6 +87,7 @@ public class Default{
 	{ 
 		resolution=Integer.parseInt(pString.split(" ")[0]);
 		iunit=Integer.parseInt(pString.split(" ")[1]);
+		/* Temporary
 		Curveplot.setunit(iunit);
 		E1=Float.parseFloat(pString.split(" ")[2]);
 		dE=Float.parseFloat(pString.split(" ")[3]);
@@ -95,6 +96,6 @@ public class Default{
 		A1=Float.parseFloat(pString.split(" ")[4]);
 		dA=Float.parseFloat(pString.split(" ")[5]);
 		Curveplot.seta(A1,dA);
-		Plotgraph.set_ascale(A1,dA);
+		Plotgraph.set_ascale(A1,dA);*/
 	}
 }

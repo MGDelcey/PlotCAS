@@ -28,17 +28,17 @@ public class Transition {
 	public int ntrans;
 	
 	/* List input */
-	public Transition(String text)
+	public Transition(Window tmp,String text)
 	{
-		transfile();
+		transfile(tmp.ncurve,tmp.WorkDir);
 		put_to_file(transitionfile,text);
 	}
-	public Transition()
+	public Transition(Window tmp)
 	{
-		transfile();
+		transfile(tmp.ncurve,tmp.WorkDir);
 	}
 	/* MOLCAS input */
-	public Transition(Molcasfile input,boolean dSF, boolean dSOC, boolean ddip, boolean dveloc,boolean dquad, boolean dboltz, float dtemp,int i1,int i2)
+	public Transition(Window tmp,Molcasfile input,boolean dSF, boolean dSOC, boolean ddip, boolean dveloc,boolean dquad, boolean dboltz, float dtemp,int i1,int i2)
 	{
 		molcas=input;
 		isSF=dSF;
@@ -50,14 +50,14 @@ public class Transition {
 		isboltz=dboltz;
 		fromGS=i1;
 		toGS=i2;
-		transfile();
-		input.totransition(dSF, dSOC, ddip, dveloc, dquad, dboltz, dtemp, transitionfile,i1,i2);
+		transfile(tmp.ncurve,tmp.WorkDir);
+		input.totransition(tmp.plot.getunit(),dSF, dSOC, ddip, dveloc, dquad, dboltz, dtemp, transitionfile,i1,i2);
 	}
 	
     /* ******************************** */
     /* *******     Analysis    ******** */
     /* ******************************** */
-	public void analysis(String parentname,int mode)
+	public void analysis(Window tmp,String parentname,int mode)
 	{
 		/* Make list of SOC states for screening */
 		int[] SOClist=new int[1];
@@ -114,12 +114,12 @@ public class Transition {
 				BufferedReader reader = new BufferedReader(new FileReader(transitionfile));
 				for (int iorb =0; iorb < ntact; iorb++)
 				{
-					trans[iorb]=new Transition();
-					Window.ncurve++;
+					trans[iorb]=new Transition(tmp);
+					tmp.ncurve++;
 					inpfile[iorb]=trans[iorb].getfile();
 					writer[iorb]= new BufferedWriter(new OutputStreamWriter(new FileOutputStream(inpfile[iorb]), "utf-8"));
 				}
-				Window.ncurve-=ntact;
+				tmp.ncurve-=ntact;
 				String text;
 				int i1,i2;
 				float e1,e2,intens;
@@ -142,7 +142,7 @@ public class Transition {
                         writer[j].write("#"+String.valueOf(ntrans));
                         writer[j].close();
                         String curvename=parentname+" "+molcas.orblabel[j];
-                        PlotCAS.fen.addcurve(curvename,1,trans[j],"",Curveplot.getunit());
+                        tmp.addcurve(curvename,1,trans[j],"",tmp.plot.getunit());
                 }
 
 			} catch (Exception e) {
@@ -173,10 +173,10 @@ public class Transition {
 			ex.printStackTrace();
 		}
 	}
-	private void transfile()
+	private void transfile(int ncurve,File WorkDir)
 	{
-		String filename="curve"+String.valueOf(Window.ncurve+1)+".xy";
-		transitionfile=new File (PlotCAS.WorkDir,filename);
+		String filename="curve"+String.valueOf(ncurve+1)+".xy";
+		transitionfile=new File (WorkDir,filename);
 	}
 
 }

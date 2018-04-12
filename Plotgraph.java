@@ -5,16 +5,25 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.util.ArrayList;
 
 import javax.swing.JPanel;
 
 public class Plotgraph extends JPanel {
 	private static final long serialVersionUID = 1L;
 	
-	private static float xgrad1=0;
-	private static float xscale=1;
-	private static float ygrad1=0;
-	private static float yscale=1;
+	private float xgrad1=0;
+	private float xscale=1;
+	private float ygrad1=0;
+	private float yscale=1;
+	private Window fen;
+	private int ncurve;
+	
+	public int resolution=300;
+	public int nplot=-1;
+	public ArrayList<float[]> plotlist = new ArrayList<float[]>();
+	//public float maxAbs=0;
+	private int unit=1;//eV
 
 	/* *********************************** */
 	/* ******* Draw the whole plot ******* */
@@ -24,14 +33,18 @@ public class Plotgraph extends JPanel {
 		super.paintComponent(g);
 		Dimension d=new Dimension();
 		d=this.getSize();
-		new Plotgraph(g,d,false,1);
+		//Plotgraph(fen,g,d,false,1);
+		update(fen,g,d,false,1);
 	}
-	public Plotgraph()
+	public Plotgraph(Window tmp)
 	{
+		fen=tmp;
+		ncurve=fen.ncurve;
 	}
-	public Plotgraph(Graphics g3, Dimension d,boolean isprint, int lwidth)
+	public void update(Window tmp,Graphics g3, Dimension d,boolean isprint, int lwidth)
 	{
-		
+		fen=tmp;
+		ncurve=fen.ncurve;
 		Graphics2D g = (Graphics2D) g3;
 		int x1,y1;
 		float lx,ly;
@@ -130,11 +143,11 @@ public class Plotgraph extends JPanel {
 			
 			// Find maxlength
 			int maxlength=0;
-			for(int i = 0; i < Window.ncurve; i++)
+			for(int i = 0; i < ncurve; i++)
 			{
-				if (Window.whichcurve.get(i).isSelected())
+				if (fen.whichcurve.get(i).isSelected())
 				{
-					name=Window.curve.get(i).getname();
+					name=fen.curve.get(i).getname();
 					stringLen = (int) g.getFontMetrics().getStringBounds(label, g).getWidth();
 					maxlength=Math.max(maxlength,stringLen);
 				}
@@ -143,15 +156,15 @@ public class Plotgraph extends JPanel {
 			int xpos=x1+(int)lx-maxlength;
 			int ypos=y1;
 			int height;
-			for(int i = 0; i < Window.ncurve; i++)
+			for(int i = 0; i < ncurve; i++)
 			{
-				if (Window.whichcurve.get(i).isSelected())
+				if (fen.whichcurve.get(i).isSelected())
 				{
 					g.setColor(Color.black);
-					name=Window.curve.get(i).getname();
+					name=fen.curve.get(i).getname();
 					g.drawString(name,xpos,ypos);
 					height=(int) g.getFontMetrics().getStringBounds(label, g).getHeight();
-					g.setColor(Window.curve.get(i).getcolor());
+					g.setColor(fen.curve.get(i).getcolor());
 					g.drawLine(xpos-(int)(2*(float)x1/10), ypos-(int)(0.3*height),xpos-(int)((float)x1/10), ypos-(int)(0.3*height));
 					ypos=ypos+ (int)(1.1*height);
 				}
@@ -159,20 +172,20 @@ public class Plotgraph extends JPanel {
 		}
 		
 		/*   Print curves  */
-		int[] curve0 = new int[Curveplot.resolution];
-		int[] curvei = new int[Curveplot.resolution];
-		for (int j=0; j<Curveplot.resolution; j++) {
-			curve0[j] = (int) (Curveplot.plotlist.get(0)[j] * lx)+x1;
+		int[] curve0 = new int[resolution];
+		int[] curvei = new int[resolution];
+		for (int j=0; j<resolution; j++) {
+			curve0[j] = (int) (plotlist.get(0)[j] * lx)+x1;
 			}
-		for(int i = 0; i < Window.ncurve; i++)
+		for(int i = 0; i < ncurve; i++)
 		{
-			g.setColor(Window.curve.get(i).getcolor());
-			if (Window.whichcurve.get(i).isSelected())
+			g.setColor(fen.curve.get(i).getcolor());
+			if (fen.whichcurve.get(i).isSelected())
 			{
-				for (int j=0; j<Curveplot.resolution; j++) {
-					curvei[j] = y1+(int)(ly*(yscale+ygrad1)/yscale)-(int) (Curveplot.plotlist.get(i+1)[j] * ly/yscale);
+				for (int j=0; j<resolution; j++) {
+					curvei[j] = y1+(int)(ly*(yscale+ygrad1)/yscale)-(int) (plotlist.get(i+1)[j] * ly/yscale);
 					}
-				g.drawPolyline(curve0,curvei,Curveplot.resolution);
+				g.drawPolyline(curve0,curvei,resolution);
 			}
 		}
 	}
@@ -181,31 +194,58 @@ public class Plotgraph extends JPanel {
 	/* *******    Get and set's    ******* */
 	/* *********************************** */
 	
-	public static void set_xscale(float dx1, float dscale)
+	public void set_xscale(float dx1, float dscale)
 	{
 		xgrad1=dx1;
 		xscale=dscale;
 		
 	}
-	public static void set_ascale(float da1, float dascale)
+	public void set_ascale(float da1, float dascale)
 	{
 		ygrad1=da1;
 		yscale=dascale;
 		
 	}
-	public static float geta1()
+	public float geta1()
 	{
 		return ygrad1;	
 	}
-	public static float getda()
+	public float getda()
 	{
 		return yscale;	
+	}
+	public void setunit(int dunit)
+	{
+		unit=dunit;
+	}
+	public float getx1(){
+		return xgrad1;
+	}
+	public float getxde(){
+		return xscale;
+	}
+	public int getunit()
+	{
+		return unit;
 	}
 	
 	/* *********************************** */
 	/* *******        Utils        ******* */
 	/* *********************************** */
-	
+	public void delete(int i)
+	{
+		plotlist.remove(i+1);
+		nplot-=1;
+		if (nplot==0)
+		{
+			plotlist.remove(0);
+			nplot=-1;
+		}
+	}
+	public void reset(){
+		plotlist.clear();
+		nplot=-1;
+	}
 	public int formatlabel(float pnumber, float pscale)
 	{
 		String label1=String.format("%f", pnumber);
@@ -288,8 +328,7 @@ public class Plotgraph extends JPanel {
 	public String labelunit()
 	{
 		String label="";
-		int iunit = Curveplot.getunit();
-		switch (iunit)
+		switch (unit)
 		{
 			case 0:
 				label="a.u.";

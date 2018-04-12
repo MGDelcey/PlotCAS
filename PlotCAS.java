@@ -3,7 +3,6 @@ package plotCAS;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.FileOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -14,9 +13,10 @@ import java.nio.channels.ReadableByteChannel;
 import javax.swing.JOptionPane;
 
 public class PlotCAS {
-	public static File WorkDir;
-	public static Window fen;
+	//public Window fen;
 	public static String currentversion="0.1.010";
+	public static int nwindow=0;
+	
 	public static void main(String[] args) {
 		/* Self-update if necessary */
 		URL version;
@@ -54,14 +54,7 @@ public class PlotCAS {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
-		
-		/* Make work dir */
-		File baseDir = new File(System.getProperty("java.io.tmpdir"));
-		String baseName = String.valueOf(System.currentTimeMillis());
-		WorkDir = new File(baseDir, baseName);
-		System.out.println(WorkDir);
-		WorkDir.mkdir();
 		/* Go */
-		fen = new Window();
+		new Window();
 	}
 }

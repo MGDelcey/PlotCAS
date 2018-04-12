@@ -52,21 +52,34 @@ public class Window extends JFrame {
     private JPanel plotscreen = new JPanel();
     private JPanel optionscreen = new JPanel();
     private JLabel optiontitle = new JLabel("");
-    private Plotgraph p;
     
     /*   Various  */
-	public static int ncurve=0;
-	public static ArrayList<Curve> curve = new ArrayList<Curve>();
-	public static ArrayList<JCheckBox> whichcurve = new ArrayList<JCheckBox>();
+	public int ncurve=0;
+	public File WorkDir;
+	public ArrayList<Curve> curve = new ArrayList<Curve>();
+	public ArrayList<JCheckBox> whichcurve = new ArrayList<JCheckBox>();
 	
 	private CurveSel plotselector=new CurveSel(0);
 	public static Default curDefault=new Default();
+	
+	
+	public Plotgraph plot;
 	
     /* ******************************** */
     /* *******      Window     ******** */
     /* ******************************** */
 
 	public Window(){
+		/* Make work dir */
+		PlotCAS.nwindow++;
+		
+		File baseDir = new File(System.getProperty("java.io.tmpdir"));
+		String baseName = String.valueOf(System.currentTimeMillis());
+		WorkDir = new File(baseDir, baseName);
+		System.out.println(WorkDir);
+		WorkDir.mkdir();
+		
+		/* Open window */
 		this.setTitle("plotCAS");
 		this.setSize(1000, 600);
 	    this.setLocationRelativeTo(null);
@@ -85,12 +98,16 @@ public class Window extends JFrame {
                 	        fList[i].delete();
                 	    }
                 	}
-                	PlotCAS.WorkDir.delete();
-                   System.exit(0);
+                	Window.this.WorkDir.delete();
+                	dispose();
+                	PlotCAS.nwindow--;
+                if (PlotCAS.nwindow==0) {System.exit(0);}
                 }
             }
         };
 	    this.addWindowListener(exitListener);
+	    
+	    plot= new Plotgraph(this);
 	    
 		/*   MENU  */
 		JMenuBar menuBar = new JMenuBar();
@@ -158,6 +175,17 @@ public class Window extends JFrame {
 	    JMenuItem about = new JMenuItem("About");
 	    about.addActionListener(new aboutmenu());
 	    menuBar.add(about);
+	    
+	    JMenuItem newapp = new JMenuItem("New");
+	    newapp.addActionListener(new ActionListener() {
+
+	        @Override
+	        public void actionPerformed(ActionEvent arg0) {
+
+	            new Window();
+	        }
+	    });
+	    menuBar.add(newapp);
 	    
 	    setJMenuBar(menuBar);
 	    
@@ -279,7 +307,7 @@ public class Window extends JFrame {
 		    optionscreen.add(loadbutton);
 		    loadbutton.addActionListener(new ActionListener() {
 			      public void actionPerformed(ActionEvent ae) {
-			    	  molcasinput = new Molcasfile(selectedFile);
+			    	  molcasinput = new Molcasfile(Window.this.WorkDir,selectedFile);
 			    	  
 			    	  smallbox.removeAll();
 		    		  int wf = molcasinput.whichWF();  
@@ -393,8 +421,8 @@ public class Window extends JFrame {
 						    	  {
 						    		  temp=Float.parseFloat(boltztemp.getText());
 						    	  }
-						    	  Transition trans=new Transition(molcasinput,isSF,isSOC, isdip,isveloc,isquad,boltzbutton.isSelected(),temp,Integer.parseInt(ground1.getText()),Integer.parseInt(ground2.getText()));new Transition(molcasinput,isSF,isSOC, isdip,isveloc,isquad,boltzbutton.isSelected(),temp,Integer.parseInt(ground1.getText()),Integer.parseInt(ground2.getText()));
-						    	  addcurve(curvename.getText(),1,trans,"",Curveplot.getunit());
+						    	  Transition trans=new Transition(Window.this,molcasinput,isSF,isSOC, isdip,isveloc,isquad,boltzbutton.isSelected(),temp,Integer.parseInt(ground1.getText()),Integer.parseInt(ground2.getText()));
+						    	  addcurve(curvename.getText(),1,trans,"",plot.getunit());
 						      }
 			    		  });
 			    		  
@@ -445,7 +473,7 @@ public class Window extends JFrame {
 	        optionscreen.add(areaScrollPane);
 	        
   		  	JPanel l0 = new JPanel();
-  		  	int iunit = Curveplot.getunit();
+  		  	int iunit = plot.getunit();
   		  	l0.setLayout(new BoxLayout(l0, BoxLayout.LINE_AXIS));
   		  	l0.add(new JLabel("Native unit:"));
   		  	unitsel=new JComboBox<String>();
@@ -471,7 +499,7 @@ public class Window extends JFrame {
 	        /* Read and put to file */
 	        curvebutton.addActionListener(new ActionListener(){
 	        	public void actionPerformed(ActionEvent ae) {
-	        		Transition trans=new Transition(textArea.getText());
+	        		Transition trans=new Transition(Window.this,textArea.getText());
 	        		addcurve(curvename.getText(),2,trans,"",unitsel.getSelectedIndex());
 	        	}
 	        });
@@ -506,7 +534,7 @@ public class Window extends JFrame {
 	        optionscreen.add(areaScrollPane);
 	        
   		  	JPanel l0 = new JPanel();
-  		  	int iunit = Curveplot.getunit();
+  		  	int iunit = plot.getunit();
   		  	l0.setLayout(new BoxLayout(l0, BoxLayout.LINE_AXIS));
   		  	l0.add(new JLabel("Native unit:"));
   		  	unitsel=new JComboBox<String>();
@@ -532,7 +560,7 @@ public class Window extends JFrame {
 	        /* Read and put to file */
 	        curvebutton.addActionListener(new ActionListener(){
 	        	public void actionPerformed(ActionEvent ae) {
-	        		Transition trans=new Transition(textArea.getText());
+	        		Transition trans=new Transition(Window.this,textArea.getText());
 	        		addcurve(curvename.getText(),3,trans,"",unitsel.getSelectedIndex());
 	        	}
 	        });
@@ -547,20 +575,18 @@ public class Window extends JFrame {
 	
 	public void addcurve(String pname,int ptype,Transition trans, String pinfo, int nativeunit)
 	{
-		ncurve++;
+		this.ncurve++;
 		curve.add(new Curve(pname,ptype,trans,pinfo,nativeunit));
-		curve.get(ncurve-1).setcolor(Plotgraph.colorgen(ncurve-1));  // Get different colors
+		curve.get(this.ncurve-1).setcolor(Plotgraph.colorgen(this.ncurve-1));  // Get different colors
 		whichcurve.add(new JCheckBox(pname));
-		whichcurve.get(ncurve-1).setSelected(true);
-		whichcurve.get(ncurve-1).addActionListener(new Refreshplot());
+		whichcurve.get(this.ncurve-1).setSelected(true);
+		whichcurve.get(this.ncurve-1).addActionListener(new Refreshplot());
 		setcurvelist();
-		if (ncurve==1)
+		if (this.ncurve==1)
 		{
-			p = new Plotgraph();
 			init_graph();
-			new Curveplot(0);
-			new Curveplot(ncurve);
-			Plotgraph.set_ascale(Curveplot.geta1(),Curveplot.getda());
+			new Curveplot(this,0);
+			new Curveplot(this,1);
 			// Enable menu
 			//plotoptions.setEnabled(true);
 		    optcurve.setEnabled(true);
@@ -570,21 +596,21 @@ public class Window extends JFrame {
 		}
 		else
 		{
-			new Curveplot(ncurve);
+			new Curveplot(this,this.ncurve);
 		}
-		plotscreen.add(p,BorderLayout.CENTER);
-		p.repaint();
+		plotscreen.add(plot,BorderLayout.CENTER);
+		plot.repaint();
 	}
 	public void curve_delete(int icurve)
 	{
 		curve.remove(icurve);
 		whichcurve.remove(icurve);
-		Curveplot.delete(icurve);
-		ncurve=ncurve-1;
+		plot.delete(icurve);
+		this.ncurve-=1;
 		
 		setcurvelist();
 		
-		if (ncurve<1)
+		if (this.ncurve<1)
 		{
 		    optcurve.setEnabled(false);
 		    optplot.setEnabled(false);
@@ -593,8 +619,8 @@ public class Window extends JFrame {
 		}
 		else
 		{
-			p.repaint();
-			plotscreen.add(p,BorderLayout.CENTER);
+			plot.repaint();
+			plotscreen.add(plot,BorderLayout.CENTER);
 		}
 	}
 
@@ -800,8 +826,8 @@ public class Window extends JFrame {
 						}
 						curDefault.set_dbroad(curve.get(icurve).getbroad());
 					}
-					new Curveplot(icurve+1);
-					p.repaint();
+					new Curveplot(Window.this,icurve+1);
+					plot.repaint();
 				}
 			});
 			optionscreen.add(setbutton);
@@ -847,12 +873,12 @@ public class Window extends JFrame {
 			JPanel l1 = new JPanel();
 		    l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));
 			l1.add(new JLabel("Number of curve points:"));
-			resolinp=new JTextField(String.valueOf(Curveplot.resolution));
+			resolinp=new JTextField(String.valueOf(plot.resolution));
 			l1.add(resolinp);
 			optionscreen.add(l1);
 			
-			float x1=Curveplot.getx1();
-			float dE=Curveplot.getxde();
+			float x1=plot.getx1();
+			float dE=plot.getxde();
 			JPanel l2 = new JPanel();
 			l2.setLayout(new BoxLayout(l2, BoxLayout.LINE_AXIS));
 			l2.add(new JLabel("Energy range:"));
@@ -862,8 +888,8 @@ public class Window extends JFrame {
 			l2.add(E2inp);
 			optionscreen.add(l2);
 			
-			float A1=Plotgraph.geta1();
-			float dA=Plotgraph.getda();
+			float A1=plot.geta1();
+			float dA=plot.getda();
 			JPanel l3 = new JPanel();
 			l3.setLayout(new BoxLayout(l3, BoxLayout.LINE_AXIS));
 			l3.add(new JLabel("Absorption range:"));
@@ -875,15 +901,15 @@ public class Window extends JFrame {
 			ascalebutton.addActionListener(new ActionListener()
 			{
 				public void actionPerformed(ActionEvent arg0){
-					A1inp.setText(String.valueOf(Curveplot.geta1()));
-					A2inp.setText(String.valueOf(Curveplot.getda()));
+					A1inp.setText(String.valueOf(plot.geta1()));
+					A2inp.setText(String.valueOf(plot.getda()));
 				}
 			});
 			l3.add(ascalebutton);
 			optionscreen.add(l3);
 			
   		  	JPanel l4 = new JPanel();
-  		  	int iunit = Curveplot.getunit();
+  		  	int iunit = plot.getunit();
   		  	l4.setLayout(new BoxLayout(l4, BoxLayout.LINE_AXIS));
   		  	l4.add(new JLabel("Unit:"));
   		  	unitsel=new JComboBox<String>();
@@ -906,24 +932,22 @@ public class Window extends JFrame {
 		}
 		class Optredraw implements ActionListener{
 			public void actionPerformed(ActionEvent arg0){
-				Curveplot.resolution=Integer.parseInt(resolinp.getText());
+				plot.resolution=Integer.parseInt(resolinp.getText());
 				float x1=Float.parseFloat(E1inp.getText());
 				float x2=Float.parseFloat(E2inp.getText());
 				float dE=x2-x1;
-				Plotgraph.set_xscale(x1,dE);
-				Curveplot.setx(x1,dE);
+				plot.set_xscale(x1,dE);
 				float a1=Float.parseFloat(A1inp.getText());
 				float a2=Float.parseFloat(A2inp.getText());
-				Curveplot.seta(a1,a2-a1);
-				Curveplot.setunit(unitsel.getSelectedIndex());
-				Plotgraph.set_ascale(a1,a2-a1);
-				curDefault.set_graphopts(Curveplot.resolution,unitsel.getSelectedIndex(),x1,dE,a1,a2-a1);
-				Curveplot.reset();
-				for (int i = 0; i <= ncurve; i++)
+				plot.setunit(unitsel.getSelectedIndex());
+				plot.set_ascale(a1,a2-a1);
+				curDefault.set_graphopts(plot.resolution,unitsel.getSelectedIndex(),x1,dE,a1,a2-a1);
+				plot.reset();
+				for (int i = 0; i <= Window.this.ncurve; i++)
 				{
-					new Curveplot(i);
+					new Curveplot(Window.this,i);
 				}
-				p.repaint();
+				plot.repaint();
 			}		
 		}
 	}
@@ -955,7 +979,7 @@ public class Window extends JFrame {
 			orbitalbutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
 					int icurve=selector.index();
-					curve.get(icurve).transition.analysis(curve.get(icurve).getname(),0);
+					curve.get(icurve).transition.analysis(Window.this,curve.get(icurve).getname(),0);
 					/*Molcasfile molcas = curve.get(icurve).transition.getmolcas();
 					molcas.analysis(curve.get(icurve));*/
 				}
@@ -967,7 +991,7 @@ public class Window extends JFrame {
 			spinbutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
 					int icurve=selector.index();
-					curve.get(icurve).transition.analysis(curve.get(icurve).getname(),1);
+					curve.get(icurve).transition.analysis(Window.this,curve.get(icurve).getname(),1);
 					/*Molcasfile molcas = curve.get(icurve).transition.getmolcas();
 					molcas.analysis(curve.get(icurve));*/
 				}
@@ -986,12 +1010,12 @@ public class Window extends JFrame {
 	class CurveOp implements ActionListener {
 		private JTextField namefield;
 		public void actionPerformed(ActionEvent arg0){
-			final JTextField[] factors = new JTextField[ncurve];
+			final JTextField[] factors = new JTextField[Window.this.ncurve];
 			optionscreen.removeAll();
 			optiontitle.setText("Operations on curves");
 			optionscreen.add(optiontitle);
 			
-			for(int i = 0; i < ncurve; i++)
+			for(int i = 0; i < Window.this.ncurve; i++)
 			{
 				JPanel l0 = new JPanel();
 				l0.add(new JLabel(curve.get(i).getname()));
@@ -1007,35 +1031,35 @@ public class Window extends JFrame {
 			sumbutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
 					float tmp,energy;
-					float[] fact=new float[ncurve];
+					float[] fact=new float[Window.this.ncurve];
 					int size=factors.length;
 					for(int i = 0; i < size; i++)
 					{
 						fact[i]=Float.parseFloat(factors[i].getText());
 					}
-					for(int i = size; i < ncurve; i++)
+					for(int i = size; i < Window.this.ncurve; i++)
 					{
 						fact[i]=0;
 					}
 					String namecurve=namefield.getText();
-	        			Transition trans=new Transition();
+	        			Transition trans=new Transition(Window.this);
 	        			File output=trans.getfile();
 					try {
 						BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
 								new FileOutputStream(output), "utf-8"));
 						// Compute the new curve
-						for(int epos = 0; epos < Curveplot.resolution; epos++)
+						for(int epos = 0; epos < plot.resolution; epos++)
 						{
-							energy=Curveplot.getx1()+Curveplot.getxde()*Curveplot.plotlist.get(0)[epos];
+							energy=plot.getx1()+plot.getxde()*plot.plotlist.get(0)[epos];
 							tmp=0;
-							for(int i = 0; i < ncurve; i++)
+							for(int i = 0; i < Window.this.ncurve; i++)
 							{
-								tmp=tmp+Curveplot.plotlist.get(i+1)[epos]*fact[i];
+								tmp=tmp+plot.plotlist.get(i+1)[epos]*fact[i];
 							}
 							writer.write(String.valueOf(energy)+" "+String.valueOf(tmp)+"\n");
 						}
 						writer.close();
-		        			addcurve(namecurve,3,trans,"",Curveplot.getunit());
+		        			addcurve(namecurve,3,trans,"",plot.getunit());
 					}
 					catch (IOException e) {
 						e.printStackTrace();
@@ -1066,8 +1090,8 @@ public class Window extends JFrame {
 			l0.add(selector.Box());
 			optionscreen.add(l0);
 			
-			float x1=Curveplot.getx1();
-			float dE=Curveplot.getxde();
+			float x1=plot.getx1();
+			float dE=plot.getxde();
 			JPanel l1 = new JPanel();
 			l1.add(new JLabel("Energy range : from "));
 			e1field=new JTextField(String.valueOf(x1));
@@ -1084,7 +1108,7 @@ public class Window extends JFrame {
 					int icurve=selector.index();
 					float e1=Float.parseFloat(e1field.getText());
 					float e2=Float.parseFloat(e2field.getText());
-					float intens=Curveplot.getintens(icurve,e1,e2);
+					float intens=Curveplot.getintens(plot,icurve,e1,e2);
 					JTextArea messagearea = new JTextArea("Integrated intensity between "+String.valueOf(e1)+" and "+String.valueOf(e2)+" : "+String.valueOf(intens));
 			    	JScrollPane scrollPane = new JScrollPane(messagearea);
 			    	scrollPane.setPreferredSize( new Dimension( 500, 20 ) );
@@ -1230,9 +1254,9 @@ public class Window extends JFrame {
 			    	  JTextArea messagearea;
 			    	  float tmp;
 			    	  int icurve=selector.index();
-			    	  for (int j=0; j<Curveplot.resolution; j++) {
-			    		  	tmp=Curveplot.getx1()+Curveplot.getxde()*Curveplot.plotlist.get(0)[j];
-							message=message+String.format("%f", tmp)+"   "+String.format("%6.3e",Curveplot.plotlist.get(icurve+1)[j])+"\n";
+			    	  for (int j=0; j<plot.resolution; j++) {
+			    		  	tmp=plot.getx1()+plot.getxde()*plot.plotlist.get(0)[j];
+							message=message+String.format("%f", tmp)+"   "+String.format("%6.3e",plot.plotlist.get(icurve+1)[j])+"\n";
 							}
 			    	  messagearea = new JTextArea(message);
 			    	  JScrollPane scrollPane = new JScrollPane(messagearea);
@@ -1333,7 +1357,8 @@ public class Window extends JFrame {
 			    	  Dimension d=new Dimension(width,height);
 			    	  BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 			    	  Graphics ig2 = bi.createGraphics();
-			    	  new Plotgraph(ig2,d,true,Integer.parseInt(lwidthfield.getText()));
+			    	  Plotgraph plot2=new Plotgraph(Window.this);
+			    	  plot2.update(Window.this,ig2,d,true,Integer.parseInt(lwidthfield.getText()));
 			    	  try {
 			    		  if (!selectedFile.getName().endsWith(".png"))
 			    		  {
@@ -1388,12 +1413,12 @@ public class Window extends JFrame {
 			JPanel l1 = new JPanel();
 		    l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));
 			l1.add(new JLabel("Number of curve points:"));
-			resolinp=new JTextField(String.valueOf(Curveplot.resolution));
+			resolinp=new JTextField(String.valueOf(plot.resolution));
 			l1.add(resolinp);
 			optionscreen.add(l1);
 			
-			float x1=Curveplot.getx1();
-			float dE=Curveplot.getxde();
+			float x1=plot.getx1();
+			float dE=plot.getxde();
 			JPanel l2 = new JPanel();
 			l2.setLayout(new BoxLayout(l2, BoxLayout.LINE_AXIS));
 			l2.add(new JLabel("Energy range:"));
@@ -1403,8 +1428,8 @@ public class Window extends JFrame {
 			l2.add(E2inp);
 			optionscreen.add(l2);
 			
-			float A1=Plotgraph.geta1();
-			float dA=Plotgraph.getda();
+			float A1=plot.geta1();
+			float dA=plot.getda();
 			JPanel l3 = new JPanel();
 			l3.setLayout(new BoxLayout(l3, BoxLayout.LINE_AXIS));
 			l3.add(new JLabel("Absorption range:"));
@@ -1415,7 +1440,7 @@ public class Window extends JFrame {
 			optionscreen.add(l3);
 			
   		  	JPanel l4 = new JPanel();
-  		  	int iunit = Curveplot.getunit();
+  		  	int iunit = plot.getunit();
   		  	l4.setLayout(new BoxLayout(l4, BoxLayout.LINE_AXIS));
   		  	l4.add(new JLabel("Unit:"));
   		  	unitsel=new JComboBox<String>();
@@ -1606,12 +1631,12 @@ public class Window extends JFrame {
 				public void actionPerformed(ActionEvent arg0)
 				{
 					curDefault.readdefaults(String.valueOf(prefsel.getSelectedItem()));
-					Curveplot.reset();
-					for (int i = 0; i <= ncurve; i++)
+					plot.reset();
+					for (int i = 0; i <= Window.this.ncurve; i++)
 					{
-						new Curveplot(i);
+						new Curveplot(Window.this,i);
 					}
-					if (ncurve>0){p.repaint();}
+					if (Window.this.ncurve>0){plot.repaint();}
 				}
 			});
 			
@@ -1630,7 +1655,7 @@ public class Window extends JFrame {
 	
 	class Refreshplot implements ActionListener {
 		public void actionPerformed(ActionEvent arg0){
-			p.repaint();
+			plot.repaint();
 		}
 	}
 
@@ -1639,7 +1664,7 @@ public class Window extends JFrame {
 		JPanel curvelist = new JPanel();
 		curvelist.setLayout(new WrapLayout());
 		plotscreen.removeAll();
-		for(int i = 0; i < ncurve; i++)
+		for(int i = 0; i < this.ncurve; i++)
 		{
 			whichcurve.get(i).setForeground(curve.get(i).getcolor());
 			curvelist.add(whichcurve.get(i));
@@ -1650,11 +1675,11 @@ public class Window extends JFrame {
 	}
 	 class CurveSel {
 		 JComboBox<comboitem> curvesel=new JComboBox<comboitem>();
-		 int[] jcurve = new int[ncurve];
+		 int[] jcurve = new int[Window.this.ncurve];
 		 public CurveSel(int itype)
 		 {
 			 int j=0;
-			 for(int i = 0; i < ncurve; i++)
+			 for(int i = 0; i < Window.this.ncurve; i++)
 			 {
 				 if (itype==0||curve.get(i).gettype()==itype)
 				 {
@@ -1728,8 +1753,7 @@ public class Window extends JFrame {
 			minE=minE-gap*0.05f;
 			gap=gap*1.1f;		
 		}
-		Plotgraph.set_xscale(minE,gap);
-		Curveplot.setx(minE,gap);
+		plot.set_xscale(minE,gap);
 		
 	}
 }
