@@ -16,6 +16,8 @@ public class Plotgraph extends JPanel {
 	private float xscale=1;
 	private float ygrad1=0;
 	private float yscale=1;
+	public float mina=0;
+	public float maxagap=0;
 	private Window fen;
 	private int ncurve;
 	

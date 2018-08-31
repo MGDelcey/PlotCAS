@@ -69,7 +69,12 @@ public class Molcasfile {
 				/* ****** */
 				/* RASSCF */
 				/* ****** */
-				
+				if (text.contains("---------   Input file   ---------"))
+				{
+					while ((text = reader.readLine()) != null) {
+						if (text.contains("--- Start Module: gateway")) {break;}
+					}
+				}
 				if (text.contains("&RASSCF")||text.contains("MOLCAS executing module RASSCF"))
 				{
 					nroot=0;

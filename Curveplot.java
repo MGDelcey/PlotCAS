@@ -203,6 +203,7 @@ public class Curveplot {
 					float a2=0;
 					float ex;
 					int epos=0;
+					float[] lorplot=new float[resolution];
 					while ((text = reader.readLine()) != null) {
 						if (!text.startsWith("#"))
 						{
@@ -212,9 +213,10 @@ public class Curveplot {
 							ex=estart+egap*(float)epos/(float)resolution;
 							while((e2>ex)&&(epos<resolution))
 							{
-								fen.plot.plotlist.get(i)[epos]=a1+(a2-a1)/(e2-e1)*(ex-e1);
-								agap=Math.max(fen.plot.plotlist.get(i)[epos], agap);
-								astart=Math.min(fen.plot.plotlist.get(i)[epos], astart);
+								//fen.plot.plotlist.get(i)[epos]=a1+(a2-a1)/(e2-e1)*(ex-e1);
+								lorplot[epos]=a1+(a2-a1)/(e2-e1)*(ex-e1);
+								//agap=Math.max(fen.plot.plotlist.get(i)[epos], agap);
+								//astart=Math.min(fen.plot.plotlist.get(i)[epos], astart);
 							 	epos=epos+1;
 							 	ex=estart+egap*(float)epos/(float)resolution;
 							}
@@ -227,11 +229,41 @@ public class Curveplot {
 				 	ex=estart+egap*(float)epos/(float)resolution;
 				 	while(epos<resolution)
 				 	{
-				 		fen.plot.plotlist.get(i)[epos]=a1+(a2-a1)/(e2-e1)*(ex-e1);
+				 		//fen.plot.plotlist.get(i)[epos]=a1+(a2-a1)/(e2-e1)*(ex-e1);
+				 		lorplot[epos]=a1+(a2-a1)/(e2-e1)*(ex-e1);
 				 		epos=epos+1;
 				 		ex=estart+egap*(float)epos/(float)resolution;
 				 	}
 				 	reader.close();
+				 	//Smoothing, this is a copy of the Gaussian convolution above
+					width=fen.curve.get(i-1).getbroad().getgaussw()/Math.sqrt(2.0*Math.log(2));
+					if (width!=0)
+					{
+						fact=1/(Math.sqrt(2*Math.PI)*width);
+						twoW2=1/(2*Math.pow(width,2));
+						for (epos = 0; epos < resolution; epos++)
+						{
+							ex1=estart+egap*(float)epos/(float)resolution;
+							tmp=0;
+							for (int epos2 = 0; epos2 < resolution; epos2++)
+							{
+								ex2=estart+egap*(float)epos2/(float)resolution;
+								tmp=tmp+lorplot[epos2]*fact*Math.exp(-Math.pow(ex2-ex1,2)*twoW2)*egap/resolution;
+							}
+							fen.plot.plotlist.get(i)[epos]=(float)tmp;
+							agap=Math.max(fen.plot.plotlist.get(i)[epos], agap);
+							astart=Math.min(fen.plot.plotlist.get(i)[epos], astart);
+						}
+					}
+					else
+					{
+						for (epos = 0; epos < resolution; epos++)
+						{
+							fen.plot.plotlist.get(i)[epos]=lorplot[epos];
+							agap=Math.max(fen.plot.plotlist.get(i)[epos], agap);
+							astart=Math.min(fen.plot.plotlist.get(i)[epos], astart);
+						}
+					}
 				} catch (IOException e) {
 					e.printStackTrace();
 					JOptionPane.showMessageDialog(new JFrame(), "Failed to plot graph", "Error",JOptionPane.ERROR_MESSAGE);
@@ -247,10 +279,10 @@ public class Curveplot {
 				break;
 			}
 			agap=agap-astart;
-			if (i==1)
-			{
-				fen.plot.set_ascale(astart, agap);
-			}
+			fen.plot.mina=Math.min(astart, fen.plot.mina);
+			fen.plot.maxagap=Math.max(agap, fen.plot.maxagap);
+			fen.curve.get(i-1).mina=astart;
+			fen.curve.get(i-1).maxagap=agap;
 		}
 	}
 	/* *********************************** */

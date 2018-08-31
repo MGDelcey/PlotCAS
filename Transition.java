@@ -60,8 +60,8 @@ public class Transition {
 	public void analysis(Window tmp,String parentname,int mode)
 	{
 		/* Make list of SOC states for screening */
-		int[] SOClist=new int[1];
-		int jtrans=0;
+		//int[] SOClist=new int[1];
+		//int jtrans=0;
 /*		if (isSOC)
 		{
 			SOClist = new int[ntrans+toGS-fromGS+1]; // max possible number of states

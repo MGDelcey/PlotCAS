@@ -58,14 +58,10 @@ public class Default{
 		dbroad=abroad;
 		add_default("Default");
 	}
-	public void set_graphopts(int dresolution, int dunit, float x1, float dx, float b1, float db)
+	public void set_graphopts(int dresolution, int dunit)
 	{
 		resolution=dresolution;
 		iunit=dunit;
-		E1=x1;
-		dE=dx;
-		A1=b1;
-		dA=db;
 	}
 	public String[] get_preflist()
 	{ 
@@ -87,8 +83,7 @@ public class Default{
 	{ 
 		resolution=Integer.parseInt(pString.split(" ")[0]);
 		iunit=Integer.parseInt(pString.split(" ")[1]);
-		/* Temporary
-		Curveplot.setunit(iunit);
+		/*Curveplot.setunit(iunit);
 		E1=Float.parseFloat(pString.split(" ")[2]);
 		dE=Float.parseFloat(pString.split(" ")[3]);
 		Plotgraph.set_xscale(E1,dE);

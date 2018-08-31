@@ -60,7 +60,7 @@ public class Window extends JFrame {
 	public ArrayList<JCheckBox> whichcurve = new ArrayList<JCheckBox>();
 	
 	private CurveSel plotselector=new CurveSel(0);
-	public static Default curDefault=new Default();
+	public Default curDefault=new Default();
 	
 	
 	public Plotgraph plot;
@@ -176,12 +176,10 @@ public class Window extends JFrame {
 	    about.addActionListener(new aboutmenu());
 	    menuBar.add(about);
 	    
-	    JMenuItem newapp = new JMenuItem("New");
+	    JMenuItem newapp = new JMenuItem("New window");
 	    newapp.addActionListener(new ActionListener() {
-
 	        @Override
 	        public void actionPerformed(ActionEvent arg0) {
-
 	            new Window();
 	        }
 	    });
@@ -576,17 +574,19 @@ public class Window extends JFrame {
 	public void addcurve(String pname,int ptype,Transition trans, String pinfo, int nativeunit)
 	{
 		this.ncurve++;
-		curve.add(new Curve(pname,ptype,trans,pinfo,nativeunit));
+		curve.add(new Curve(pname,ptype,trans,curDefault.get_dbroad(),pinfo,nativeunit));
 		curve.get(this.ncurve-1).setcolor(Plotgraph.colorgen(this.ncurve-1));  // Get different colors
 		whichcurve.add(new JCheckBox(pname));
 		whichcurve.get(this.ncurve-1).setSelected(true);
 		whichcurve.get(this.ncurve-1).addActionListener(new Refreshplot());
 		setcurvelist();
+		if (ptype==3) {curve.get(this.ncurve-1).getbroad().set_Broadening(0);}
 		if (this.ncurve==1)
 		{
 			init_graph();
 			new Curveplot(this,0);
 			new Curveplot(this,1);
+			plot.set_ascale(plot.mina, plot.maxagap);
 			// Enable menu
 			//plotoptions.setEnabled(true);
 		    optcurve.setEnabled(true);
@@ -791,6 +791,23 @@ public class Window extends JFrame {
 				optionscreen.add(l9);
 				if (ibroad<2) {l9.setVisible(false);}
 			}
+			else if (curve.get(icurve).gettype()==3)
+			{
+				JPanel l6 = new JPanel();
+				l6.setLayout(new BoxLayout(l6, BoxLayout.LINE_AXIS));
+				l6.add(new JLabel("Gaussian smoothing:"));
+				gausswfield = new JTextField(String.valueOf(curve.get(icurve).getbroad().getgaussw()));
+				l6.add(gausswfield);
+				ButtonGroup GunitGroup = new ButtonGroup();
+				HWHM = new JRadioButton("HWHM");
+				HWHM.setSelected(true);
+				GunitGroup.add(HWHM);
+				l6.add(HWHM);
+				Gsigma = new JRadioButton("sigma");
+				GunitGroup.add(Gsigma);
+				l6.add(Gsigma);
+				optionscreen.add(l6);
+			};
 			
 			JButton setbutton=new JButton("Save");
 		    
@@ -825,6 +842,11 @@ public class Window extends JFrame {
 							break;
 						}
 						curDefault.set_dbroad(curve.get(icurve).getbroad());
+					}
+					else if (curve.get(icurve).gettype()==3)
+					{
+						float gauss=Float.parseFloat(gausswfield.getText());
+						curve.get(icurve).getbroad().set_Broadening(gauss);
 					}
 					new Curveplot(Window.this,icurve+1);
 					plot.repaint();
@@ -901,8 +923,16 @@ public class Window extends JFrame {
 			ascalebutton.addActionListener(new ActionListener()
 			{
 				public void actionPerformed(ActionEvent arg0){
-					A1inp.setText(String.valueOf(plot.geta1()));
-					A2inp.setText(String.valueOf(plot.getda()));
+					
+					float mina=curve.get(0).mina;
+					float maxagap=curve.get(0).maxagap;
+					for (int i = 1; i <= Window.this.ncurve-1; i++)
+					{
+						mina=Math.min(curve.get(i).mina,mina);
+						maxagap=Math.max(curve.get(i).maxagap,maxagap);
+					}
+					A1inp.setText(String.valueOf(mina));
+					A2inp.setText(String.valueOf(maxagap));
 				}
 			});
 			l3.add(ascalebutton);
@@ -941,7 +971,7 @@ public class Window extends JFrame {
 				float a2=Float.parseFloat(A2inp.getText());
 				plot.setunit(unitsel.getSelectedIndex());
 				plot.set_ascale(a1,a2-a1);
-				curDefault.set_graphopts(plot.resolution,unitsel.getSelectedIndex(),x1,dE,a1,a2-a1);
+				curDefault.set_graphopts(plot.resolution,unitsel.getSelectedIndex());
 				plot.reset();
 				for (int i = 0; i <= Window.this.ncurve; i++)
 				{
@@ -987,16 +1017,16 @@ public class Window extends JFrame {
 			l0.add(orbitalbutton);
 			optionscreen.add(l0);
 			
-			spinbutton= new JButton("Spin analysis");
-			spinbutton.addActionListener(new ActionListener(){
-				public void actionPerformed(ActionEvent event){
-					int icurve=selector.index();
-					curve.get(icurve).transition.analysis(Window.this,curve.get(icurve).getname(),1);
+			//spinbutton= new JButton("Spin analysis");
+			//spinbutton.addActionListener(new ActionListener(){
+			//	public void actionPerformed(ActionEvent event){
+			//		int icurve=selector.index();
+			//		curve.get(icurve).transition.analysis(Window.this,curve.get(icurve).getname(),1);
 					/*Molcasfile molcas = curve.get(icurve).transition.getmolcas();
 					molcas.analysis(curve.get(icurve));*/
-				}
-			});
-			l0.add(spinbutton);
+			//	}
+			//});
+			//l0.add(spinbutton);
 			optionscreen.add(l0);
 			
 		    optionscreen.revalidate();
@@ -1357,8 +1387,7 @@ public class Window extends JFrame {
 			    	  Dimension d=new Dimension(width,height);
 			    	  BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 			    	  Graphics ig2 = bi.createGraphics();
-			    	  Plotgraph plot2=new Plotgraph(Window.this);
-			    	  plot2.update(Window.this,ig2,d,true,Integer.parseInt(lwidthfield.getText()));
+			    	  plot.update(Window.this,ig2,d,true,Integer.parseInt(lwidthfield.getText()));
 			    	  try {
 			    		  if (!selectedFile.getName().endsWith(".png"))
 			    		  {
@@ -1401,7 +1430,7 @@ public class Window extends JFrame {
 	/* ******************************** */
 	
 	class defaultmenu implements ActionListener {
-		private JTextField resolinp,E1inp,E2inp,A1inp,A2inp,gausswfield, lorentzfield, lorentz2field, lorentzsplitfield,preflabel;
+		private JTextField resolinp,gausswfield, lorentzfield, lorentz2field, lorentzsplitfield,preflabel;
 		private JComboBox<String> unitsel,broadsel,prefsel;
 		private JPanel l7,l8,l9;
 		
@@ -1416,28 +1445,6 @@ public class Window extends JFrame {
 			resolinp=new JTextField(String.valueOf(plot.resolution));
 			l1.add(resolinp);
 			optionscreen.add(l1);
-			
-			float x1=plot.getx1();
-			float dE=plot.getxde();
-			JPanel l2 = new JPanel();
-			l2.setLayout(new BoxLayout(l2, BoxLayout.LINE_AXIS));
-			l2.add(new JLabel("Energy range:"));
-			E1inp=new JTextField(String.valueOf(x1));
-			l2.add(E1inp);
-			E2inp=new JTextField(String.valueOf(x1+dE));
-			l2.add(E2inp);
-			optionscreen.add(l2);
-			
-			float A1=plot.geta1();
-			float dA=plot.getda();
-			JPanel l3 = new JPanel();
-			l3.setLayout(new BoxLayout(l3, BoxLayout.LINE_AXIS));
-			l3.add(new JLabel("Absorption range:"));
-			A1inp=new JTextField(String.valueOf(A1));
-			l3.add(A1inp);
-			A2inp=new JTextField(String.valueOf(A1+dA));
-			l3.add(A2inp);
-			optionscreen.add(l3);
 			
   		  	JPanel l4 = new JPanel();
   		  	int iunit = plot.getunit();
@@ -1574,12 +1581,7 @@ public class Window extends JFrame {
 			    	  }
 			    	  curDefault.set_dbroad(broad);
 			    	  
-			    	  float x1=Float.parseFloat(E1inp.getText());
-			    	  float x2=Float.parseFloat(E2inp.getText());
-			    	  float dE=x2-x1;
-			    	  float a1=Float.parseFloat(A1inp.getText());
-			    	  float a2=Float.parseFloat(A2inp.getText());
-			    	  curDefault.set_graphopts(Integer.parseInt(resolinp.getText()),unitsel.getSelectedIndex(),x1,dE,a1,a2-a1);
+			    	  curDefault.set_graphopts(Integer.parseInt(resolinp.getText()),unitsel.getSelectedIndex());
 
 			    	  String label=preflabel.getText();
 			    	  boolean confirm=true;
@@ -1749,9 +1751,11 @@ public class Window extends JFrame {
 		float gap=maxE-minE;
 		if (curve.get(0).gettype()<3)
 		{
+			float broad=curDefault.get_dbroad().getgaussw();
+			if (curDefault.get_dbroad().islorentz()) {broad+=curDefault.get_dbroad().getlorw1();}
 			//add some space on the sides
-			minE=minE-gap*0.05f;
-			gap=gap*1.1f;		
+			minE=minE-3*broad;
+			gap=gap+6*broad;		
 		}
 		plot.set_xscale(minE,gap);
 		

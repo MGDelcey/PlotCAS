@@ -17,6 +17,7 @@ public class Curve {
 	private Broadening broad;
 	public Transition transition;
 	private int nativeunit;
+	public float maxagap, mina;
 	/* Default */
 	/*public Curve(){ 
 		  curvename="";
@@ -29,7 +30,7 @@ public class Curve {
 		  nativeunit=Curveplot.getunit();
 	}*/
 	/* With parameters */
-	public Curve(String pName, int ptype, Transition trans,String pInfo, int punit){ 
+	public Curve(String pName, int ptype, Transition trans,Broadening pbroad, String pInfo, int punit){ 
 		  curvename=pName;
 		  curvetype=ptype;
 		  curveinfo=pInfo;
@@ -37,7 +38,7 @@ public class Curve {
 		  xoffset=0;
 		  yscale=1;
 		  ccolor=Color.black;
-		  broad=Window.curDefault.get_dbroad();
+		  broad=pbroad;
 		  nativeunit=punit;
 	}
 	
