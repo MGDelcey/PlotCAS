@@ -227,7 +227,7 @@ public class Window extends JFrame {
 			
 			optionscreen.add(new JLabel("author : M.G. Delcey"));
 			
-			optionscreen.add(new JLabel("License CC-BY-SA 3.0"));
+			optionscreen.add(new JLabel("GNU Lesser General Public License v2.1"));
 			
 		    optionscreen.revalidate();
 		    optionscreen.repaint();

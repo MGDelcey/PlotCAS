@@ -69,13 +69,7 @@ public class Molcasfile {
 				/* ****** */
 				/* RASSCF */
 				/* ****** */
-				if (text.contains("---------   Input file   ---------"))
-				{
-					while ((text = reader.readLine()) != null) {
-						if (text.contains("--- Start Module: gateway")) {break;}
-					}
-				}
-				if (text.contains("&RASSCF")||text.contains("MOLCAS executing module RASSCF"))
+				if (text.contains("Start Module: rasscf")||text.contains("MOLCAS executing module RASSCF"))
 				{
 					nroot=0;
 					writer.write("*RASSCF\n");
@@ -144,7 +138,7 @@ public class Molcasfile {
 				/* CASPT2 */
 				/* ****** */
 				
-				if (text.contains("&CASPT2")||text.contains("MOLCAS executing module CASPT2"))
+				if (text.contains("Start Module: caspt2")||text.contains("MOLCAS executing module CASPT2"))
 				{
 					writer.write("*CASPT2\n");
 					isCASPT2=true;
@@ -204,7 +198,7 @@ public class Molcasfile {
 				/* ****** */
 				/* RASSI  */
 				/* ****** */
-				if (text.contains("&RASSI")||text.contains("MOLCAS executing module RASSI"))
+				if (text.contains("Start Module: rassi")||text.contains("MOLCAS executing module RASSI"))
 				{
 					writer.write("*RASSI\n");
 					isRASSI=true;

@@ -98,6 +98,12 @@ public class Transition {
 		}
 		else
 		{*/
+		if (isSOC)
+		{
+			JOptionPane.showMessageDialog(new JFrame(), "Spin-orbit spectra analysis temporarily disabled", "Error",JOptionPane.ERROR_MESSAGE);
+		}
+		else
+		{
 			/* Get natural orbitals */
 			int ntact;
 			if (mode==0) {ntact=molcas.ntact;}
@@ -151,7 +157,7 @@ public class Transition {
 			}
 		}
 		
-	//}
+	}
 	/* Gets, sets and utils */
 	
 	public Molcasfile getmolcas()
