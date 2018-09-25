@@ -580,7 +580,10 @@ public class Window extends JFrame {
 		whichcurve.get(this.ncurve-1).setSelected(true);
 		whichcurve.get(this.ncurve-1).addActionListener(new Refreshplot());
 		setcurvelist();
-		if (ptype==3) {curve.get(this.ncurve-1).getbroad().set_Broadening(0);}
+		if (ptype==3) {
+			Broadening broad=new Broadening();
+			broad.set_Broadening(0);
+			curve.get(this.ncurve-1).setbroad(broad);}
 		if (this.ncurve==1)
 		{
 			init_graph();
@@ -822,6 +825,7 @@ public class Window extends JFrame {
 					curve.get(icurve).setcolor(Color.decode(colorfield.getText()));
 					whichcurve.get(icurve).setText(curvename.getText());
 					whichcurve.get(icurve).setForeground(curve.get(icurve).getcolor());
+					Broadening broad=new Broadening();
 					if (curve.get(icurve).gettype()<=2)
 					{
 						float gauss=Float.parseFloat(gausswfield.getText());
@@ -832,21 +836,23 @@ public class Window extends JFrame {
 						switch (broadsel.getSelectedIndex())
 						{
 						case 0:
-							curve.get(icurve).getbroad().set_Broadening(gauss);
+							broad.set_Broadening(gauss);
 							break;
 						case 1:
-							curve.get(icurve).getbroad().set_Broadening(gauss,Float.parseFloat(lorentzfield.getText()));
+							broad.set_Broadening(gauss,Float.parseFloat(lorentzfield.getText()));
 							break;
 						case 2:
-							curve.get(icurve).getbroad().set_Broadening(gauss,Float.parseFloat(lorentzfield.getText()),Float.parseFloat(lorentzsplitfield.getText()),Float.parseFloat(lorentz2field.getText()));
+							broad.set_Broadening(gauss,Float.parseFloat(lorentzfield.getText()),Float.parseFloat(lorentzsplitfield.getText()),Float.parseFloat(lorentz2field.getText()));
 							break;
 						}
+						curve.get(icurve).setbroad(broad);
 						curDefault.set_dbroad(curve.get(icurve).getbroad());
 					}
 					else if (curve.get(icurve).gettype()==3)
 					{
 						float gauss=Float.parseFloat(gausswfield.getText());
-						curve.get(icurve).getbroad().set_Broadening(gauss);
+						broad.set_Broadening(gauss);
+						curve.get(icurve).setbroad(broad);
 					}
 					new Curveplot(Window.this,icurve+1);
 					plot.repaint();
