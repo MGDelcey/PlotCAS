@@ -307,6 +307,39 @@ public class Curveplot {
 		}
 		return norm;
 	}
+	public static String similarity(Plotgraph plot,int i1,int i2,int imethod){
+		int resolution=plot.resolution;
+		//float estart=plot.getx1();
+		float egap=plot.getxde();
+		String result="";
+		//double resol=(double) egap/(double) resolution;
+		switch (imethod)
+		{
+			case 0: // Euclidian similarity
+				double norm=0;
+				for (int epos = 0; epos < resolution; epos++)
+				{
+					norm+=Math.pow((double) plot.plotlist.get(i1+1)[epos]-plot.plotlist.get(i2+1)[epos],2);
+				}
+				norm=Math.sqrt(norm/(double) resolution)*(double) egap;
+				result="Euclidian distance between the two curves : "+String.valueOf(norm);
+				break;
+			case 1: // Cosine similarity
+				double norm1=0; double norm2=0;
+				double product=0;
+				for (int epos = 0; epos < resolution; epos++)
+				{
+					product+=plot.plotlist.get(i1+1)[epos]*plot.plotlist.get(i2+1)[epos];
+					norm1+=plot.plotlist.get(i1+1)[epos]*plot.plotlist.get(i1+1)[epos];
+					norm2+=plot.plotlist.get(i2+1)[epos]*plot.plotlist.get(i2+1)[epos];
+				}
+				product=product/Math.sqrt(norm1)/Math.sqrt(norm2);
+				result="Cosine similarity between the two curves : "+String.valueOf(product);
+				break;
+				
+		}
+		return result;
+	}
 	/* *********************************** */
 	/* *******       Utils         ******* */
 	/* *********************************** */

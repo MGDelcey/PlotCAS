@@ -153,10 +153,10 @@ public class Window extends JFrame {
 	    analysis.add(intensity);
 	    /*JMenuItem scatter = new JMenuItem("Scattering");
 	    scatter.addActionListener(new Scatter());
-	    analysis.add(scatter);
+	    analysis.add(scatter);*/
 	    JMenuItem similarity = new JMenuItem("Similarity");
 	    similarity.addActionListener(new Similarity());
-	    analysis.add(similarity);*/
+	    analysis.add(similarity);
 	    menuBar.add(analysis);
 	    
 	    export = new JMenu("Export");
@@ -1170,28 +1170,49 @@ public class Window extends JFrame {
 			optiontitle.setText("Similarity analysis of 2 spectra");
 			optionscreen.add(optiontitle);
 			
+			if (Window.this.ncurve<2)
+			{
+	    		  JOptionPane.showMessageDialog(new JFrame(),
+	    				    "Requires at least 2 curves.",
+	    				    "Input error",
+	    				    JOptionPane.ERROR_MESSAGE);
+			}
+			else
+			{
+			
 			JPanel l0 = new JPanel();
 			selector1=new CurveSel(0);
 			l0.add(selector1.Box());
 			selector2=new CurveSel(0);
+			selector2.select(1);
 			l0.add(selector2.Box());
 			optionscreen.add(l0);
 			
 			JPanel l1 = new JPanel();
   		  	l1.add(new JLabel("Method:"));
+  		  	methodsel.removeAllItems();
   		  	methodsel.addItem("Euclidian distance");
   		  	methodsel.addItem("Cosine angle");
-  		  	methodsel.addItem("Integrated intensity");
-  		  	methodsel.addItem("Hybrid");
+  		  	//methodsel.addItem("Integrated intensity");
+  		  	//methodsel.addItem("Hybrid");
   		  	methodsel.setSelectedIndex(0);
   		  	l1.add(methodsel);
 			optionscreen.add(l1);
 			
 			analysebutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
+					int curve1=selector1.index();
+					int curve2=selector2.index();
+					int imethod=methodsel.getSelectedIndex();
+					String result=Curveplot.similarity(plot,curve1,curve2,imethod);
+					JTextArea messagearea = new JTextArea(result);
+			    		JScrollPane scrollPane = new JScrollPane(messagearea);
+			    		scrollPane.setPreferredSize( new Dimension( 500, 20 ) );
+			    		JOptionPane.showMessageDialog(null, scrollPane, "Similarity", JOptionPane.PLAIN_MESSAGE); 
 				}
 			});
 			optionscreen.add(analysebutton);
+			}
 			
 		    optionscreen.revalidate();
 		    optionscreen.repaint();
