@@ -17,7 +17,7 @@ public class Curve {
 	private Broadening broad;
 	public Transition transition;
 	private int nativeunit;
-	public float maxagap, mina;
+	public float maxagap, mina,emax;
 	/* Default */
 	/*public Curve(){ 
 		  curvename="";

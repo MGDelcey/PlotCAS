@@ -16,6 +16,7 @@ public class Curveplot {
 		float astart=fen.plot.geta1();
 		float estart=fen.plot.getx1();
 		float egap=fen.plot.getxde();
+		int emax=0;
 		if (i>fen.plot.nplot)
 		{
 			fen.plot.plotlist.add(new float[resolution]);
@@ -149,7 +150,11 @@ public class Curveplot {
 								tmp=tmp+lorplot[epos2]*fact*Math.exp(-Math.pow(ex2-ex1,2)*twoW2)*egap/resolution;
 							}
 							fen.plot.plotlist.get(i)[epos]=(float)tmp;
-							agap=Math.max(fen.plot.plotlist.get(i)[epos], agap);
+							if (fen.plot.plotlist.get(i)[epos]> agap)
+							{
+								agap=fen.plot.plotlist.get(i)[epos];
+								emax=epos;
+							}
 							astart=Math.min(fen.plot.plotlist.get(i)[epos], astart);
 						}
 					}
@@ -158,7 +163,11 @@ public class Curveplot {
 						for (int epos = 0; epos < resolution; epos++)
 						{
 							fen.plot.plotlist.get(i)[epos]=lorplot[epos];
-							agap=Math.max(fen.plot.plotlist.get(i)[epos], agap);
+							if (fen.plot.plotlist.get(i)[epos]> agap)
+							{
+								agap=fen.plot.plotlist.get(i)[epos];
+								emax=epos;
+							}
 							astart=Math.min(fen.plot.plotlist.get(i)[epos], astart);
 						}
 					}
@@ -181,7 +190,11 @@ public class Curveplot {
 								tmp=tmp+translist[1][itrans]*fact*Math.exp(-Math.pow(ex2-ex1,2)*twoW2);
 							}
 							fen.plot.plotlist.get(i)[epos]=(float)tmp;
-							agap=Math.max(fen.plot.plotlist.get(i)[epos], agap);
+							if (fen.plot.plotlist.get(i)[epos]> agap)
+							{
+								agap=fen.plot.plotlist.get(i)[epos];
+								emax=epos;
+							}
 							astart=Math.min(fen.plot.plotlist.get(i)[epos], astart);
 						}
 					}
@@ -251,7 +264,11 @@ public class Curveplot {
 								tmp=tmp+lorplot[epos2]*fact*Math.exp(-Math.pow(ex2-ex1,2)*twoW2)*egap/resolution;
 							}
 							fen.plot.plotlist.get(i)[epos]=(float)tmp;
-							agap=Math.max(fen.plot.plotlist.get(i)[epos], agap);
+							if (fen.plot.plotlist.get(i)[epos]> agap)
+							{
+								agap=fen.plot.plotlist.get(i)[epos];
+								emax=epos;
+							}
 							astart=Math.min(fen.plot.plotlist.get(i)[epos], astart);
 						}
 					}
@@ -260,7 +277,11 @@ public class Curveplot {
 						for (epos = 0; epos < resolution; epos++)
 						{
 							fen.plot.plotlist.get(i)[epos]=lorplot[epos];
-							agap=Math.max(fen.plot.plotlist.get(i)[epos], agap);
+							if (fen.plot.plotlist.get(i)[epos]> agap)
+							{
+								agap=fen.plot.plotlist.get(i)[epos];
+								emax=epos;
+							}
 							astart=Math.min(fen.plot.plotlist.get(i)[epos], astart);
 						}
 					}
@@ -283,6 +304,7 @@ public class Curveplot {
 			fen.plot.maxagap=Math.max(agap, fen.plot.maxagap);
 			fen.curve.get(i-1).mina=astart;
 			fen.curve.get(i-1).maxagap=agap;
+			fen.curve.get(i-1).emax=estart+emax*egap/(float) resolution;
 		}
 	}
 	/* *********************************** */
@@ -306,6 +328,36 @@ public class Curveplot {
 			norm+=plot.plotlist.get(i+1)[epos]*resol;
 		}
 		return norm;
+	}
+	public static float halfintensity(Plotgraph plot,int i,float e1,float e2){
+		float estart=plot.getx1();
+		float egap=plot.getxde();
+		int resolution=plot.resolution;
+		int istart=(int) ((e1-estart)/egap*(float)resolution);
+		istart=Math.max(istart,0);
+		istart=Math.min(istart,resolution);
+		int iend=(int) ((e2-estart)/egap*(float)resolution);
+		iend=Math.max(iend,0);
+		iend=Math.min(iend,resolution);
+		float norm=0;
+		float resol=egap/(float) resolution;
+		float position=estart;
+		for(int epos = istart; epos < iend; epos++)
+		{
+			norm+=plot.plotlist.get(i+1)[epos]*resol;
+		}
+		float totala=norm;
+		norm=0;
+		for(int epos = istart; epos < iend; epos++)
+		{
+			norm+=plot.plotlist.get(i+1)[epos]*resol;
+			if (norm>(0.5*totala))
+			{
+				position=estart+epos*resol;
+				break;
+			}
+		}
+		return position;
 	}
 	public static String similarity(Plotgraph plot,int i1,int i2,int imethod){
 		int resolution=plot.resolution;

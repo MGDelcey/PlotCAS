@@ -142,15 +142,18 @@ public class Window extends JFrame {
 	    
 	    analysis = new JMenu("Analysis");
 	    analysis.setEnabled(false);
-	    JMenuItem analorb = new JMenuItem("Orbital contributions");
-	    analorb.addActionListener(new Analorbmenu());
-	    analysis.add(analorb);
 	    JMenuItem operations = new JMenuItem("Curve operations");
 	    operations.addActionListener(new CurveOp());
 	    analysis.add(operations);
+	    JMenuItem align = new JMenuItem("Align curves");
+	    align.addActionListener(new Align());
+	    analysis.add(align);
 	    JMenuItem intensity = new JMenuItem("Integrated intensity");
 	    intensity.addActionListener(new IntIntens());
 	    analysis.add(intensity);
+	    JMenuItem analorb = new JMenuItem("Orbital contributions");
+	    analorb.addActionListener(new Analorbmenu());
+	    analysis.add(analorb);
 	    /*JMenuItem scatter = new JMenuItem("Scattering");
 	    scatter.addActionListener(new Scatter());
 	    analysis.add(scatter);*/
@@ -1157,14 +1160,133 @@ public class Window extends JFrame {
 		    optionscreen.repaint();
 		}
 	}
+	
+	/* ******************************** */
+	/* ******* Curve alignment  ******* */
+	/* ******************************** */
+	
+	class Align implements ActionListener {
+		private JButton alignbutton;
+		private CurveSel selector1;
+		private CurveSel selector2;
+		private JComboBox<String> energysel;
+		private JComboBox<String> intensitysel;
+		public void actionPerformed(ActionEvent arg0){
+			optionscreen.removeAll();
+			optiontitle.setText("Curve alignment");
+			optionscreen.add(optiontitle);
+			
+			if (Window.this.ncurve<2)
+			{
+	    		  JOptionPane.showMessageDialog(new JFrame(),
+	    				    "Requires at least 2 curves.",
+	    				    "Input error",
+	    				    JOptionPane.ERROR_MESSAGE);
+			}
+			else
+			{
+				JPanel l0 = new JPanel();
+				l0.add(new JLabel("Reference curve:"));
+				selector1=new CurveSel(0);
+				l0.add(selector1.Box());
+				optionscreen.add(l0);
+				
+				JPanel l1 = new JPanel();
+				l1.add(new JLabel("Curve to align:"));
+				selector2=new CurveSel(0);
+				selector2.select(1);
+				l1.add(selector2.Box());
+				optionscreen.add(l1);
+				
+				JPanel l2 = new JPanel();
+	  		  	l2.add(new JLabel("Energy alignment:"));
+	  		  	energysel=new JComboBox<String>();
+	  		  	energysel.addItem("None");
+	  		  	energysel.addItem("Maxima");
+	  		  	energysel.addItem("Half integrated intensity");
+	  		  	energysel.setSelectedIndex(0);
+	  		  	l2.add(energysel);
+				optionscreen.add(l2);
+				
+				JPanel l3 = new JPanel();
+	  		  	l3.add(new JLabel("Intensity alignment:"));
+	  		  	intensitysel=new JComboBox<String>();
+	  		  	intensitysel.addItem("None");
+	  		  	intensitysel.addItem("Maxima");
+	  			intensitysel.addItem("Integrated intensity");
+	  			intensitysel.setSelectedIndex(0);
+	  		  	l3.add(intensitysel);
+				optionscreen.add(l3);
+				
+				
+				alignbutton= new JButton("Align");
+				alignbutton.addActionListener(new ActionListener(){
+					public void actionPerformed(ActionEvent event){
+						int curve1=selector1.index();
+						int curve2=selector2.index();
+						int iene=energysel.getSelectedIndex();
+						int iintens=intensitysel.getSelectedIndex();
+						float e1=plot.getx1();
+						float dE=plot.getxde();
+						float e2=e1+dE;
+						float xshift=curve.get(curve2).getxoffset();
+						switch (iene)
+						{
+							case 1:
+								float max1=curve.get(curve1).emax;
+								float max2=curve.get(curve2).emax;
+								xshift=xshift+max1-max2;
+								break;
+							case 2:
+								float grav1=Curveplot.halfintensity(plot,curve1,e1,e2);
+								float grav2=Curveplot.halfintensity(plot,curve2,e1,e2);
+								xshift=xshift+grav1-grav2;
+								break;
+						}
+						curve.get(curve2).setxoffset(xshift);
+						new Curveplot(Window.this,curve2+1);
+						
+						// Intensity alignment 
+						float yscale=curve.get(curve2).getyscale();
+						switch (iintens)
+						{
+							case 1:
+								float mina1=curve.get(curve1).mina;
+								float mina2=curve.get(curve2).mina;
+								float maxagap1=curve.get(curve1).maxagap;
+								float maxagap2=curve.get(curve2).maxagap;
+								float maxa1=mina1+maxagap1;
+								float maxa2=mina2+maxagap2;
+								yscale=yscale*maxa1/maxa2;
+								break;
+							case 2:
+								float intens1=Curveplot.getintens(plot,curve1,e1,e2);
+								float intens2=Curveplot.getintens(plot,curve2,e1,e2);
+								yscale=yscale*intens1/intens2;
+								break;
+						}
+						curve.get(curve2).setyscale(yscale);
+						
+						new Curveplot(Window.this,curve2+1);
+						plot.repaint();
+					}
+				});
+				optionscreen.add(alignbutton);
+			}
+			
+		    optionscreen.revalidate();
+		    optionscreen.repaint();
+		}
+		
+	}
 	/* ******************************** */
 	/* ******* Similarity analysis ******* */
 	/* ******************************** */
 	class Similarity implements ActionListener {
-		JButton analysebutton=new JButton("Analyze");
+		JButton analysebutton;
 		private CurveSel selector1;
 		private CurveSel selector2;
-		private JComboBox<String> methodsel=new JComboBox<String>();
+		private JComboBox<String> methodsel;
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
 			optiontitle.setText("Similarity analysis of 2 spectra");
@@ -1190,7 +1312,7 @@ public class Window extends JFrame {
 			
 			JPanel l1 = new JPanel();
   		  	l1.add(new JLabel("Method:"));
-  		  	methodsel.removeAllItems();
+  		    methodsel=new JComboBox<String>();
   		  	methodsel.addItem("Euclidian distance");
   		  	methodsel.addItem("Cosine angle");
   		  	//methodsel.addItem("Integrated intensity");
@@ -1199,6 +1321,7 @@ public class Window extends JFrame {
   		  	l1.add(methodsel);
 			optionscreen.add(l1);
 			
+			analysebutton=new JButton("Analyze");
 			analysebutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
 					int curve1=selector1.index();
