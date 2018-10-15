@@ -606,99 +606,6 @@ public class Molcasfile {
 		return natorb;
 	}
     /* ******************************** */
-    /* *******     Scatter     ******** */
-    /* ******************************** */
-	public void toscatter()
-	{
-		/*int iunit=Curveplot.getunit();
-		double Escale=1;
-		String text;
-		String stop="*SF";
-		double[] energies=null;
-		double[] boltz=null;
-		int nrofstates=0;
-		int i1,i2;
-		double tmp;
-		int ntrans=0;
-		if (isSF) {stop="*SF"; energies=new double[nrSFstates];nrofstates=nrSFstates;}
-		if (isSOC) {stop="*SOC";energies=new double[nrSOCstates];nrofstates=nrSOCstates;}
-		Escale=Curveplot.unitfactor(iunit);
-		double kT=0.000086173325*Boltztemp/27.211399;
-		File output=new File (PlotCAS.WorkDir,"tmp");*//* Temporary just to prevent fail */
-	/*	try {
-			BufferedReader reader = new BufferedReader(new FileReader(intfile));
-			BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
-					new FileOutputStream(output), "utf-8"));
-			boolean first=false;
-			while ((text = reader.readLine()) != null) {
-				if (text.contains(stop))
-				{
-					for (int i = 0; i < nrofstates; i++)
-					{
-						text = reader.readLine();
-						energies[i]=Double.parseDouble(text.trim());
-					}
-					first=true;*/
-					/* Boltzman */
-					/*boltz=new double[toGS-fromGS+1];
-					double norm=0;
-					for (int i = 0; i <= toGS-fromGS; i++)
-					{
-						if (isboltz)
-						{
-							boltz[i]=Math.exp(-(energies[i+fromGS-1]-energies[fromGS-1])/kT);
-						}
-						else
-						{
-							boltz[i]=1;
-						}
-						norm=norm+boltz[i];
-					}
-					for (int i = 0; i <= toGS-fromGS; i++)
-					{
-						boltz[i]=boltz[i]/norm;
-					}
-				}
-				if (text.contains("*SOC")) {break;}
-				if (first&&((text.contains("*Velocity")&&isdipole&&isveloc)||(text.contains("*Dipole")&&isdipole&&!isveloc)||(text.contains("*Quadrupole")&&isquadrupole)))
-				//if ((text.contains("*Velocity")&&ddip&&dveloc)||(text.contains("*Dipole")&&ddip&&!dveloc)||(text.contains("*Quadrupole")&&dquad))
-				{
-					//first=false;
-					text = reader.readLine();
-					while (!text.startsWith("*"))
-					{
-						i1=Integer.parseInt(text.trim().split(" +")[0]);
-						if (i1>=fromGS&&i1<=toGS)
-						{
-							i2=Integer.parseInt(text.trim().split(" +")[1]);
-							tmp=Double.parseDouble(text.trim().split(" +")[2])*boltz[i1-fromGS];
-							writer.write(String.valueOf(Escale*(energies[i2-1]-energies[i1-1]))+" "+String.valueOf(tmp)+"\n");
-							ntrans++;
-						}
-						else
-						{
-							i2=Integer.parseInt(text.trim().split(" +")[1]);
-							if (i2>=fromGS&&i2<=toGS)
-							{
-								tmp=Double.parseDouble(text.trim().split(" +")[2])*boltz[i2-fromGS];
-								writer.write(String.valueOf(Escale*(energies[i1-1]-energies[i2-1]))+" "+String.valueOf(tmp)+"\n");
-								ntrans++;
-							}
-						}
-						text = reader.readLine();
-					}
-				}
-			}
-			writer.write("#"+String.valueOf(ntrans)+"\n");
-			writer.close();
-			reader.close();
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(new JFrame(), "Failed to create spectrum from Molcas file", "Error",JOptionPane.ERROR_MESSAGE);
-		}*/
-	}
-    /* ******************************** */
     /* *******  Gets and sets  ******** */
     /* ******************************** */
 	public int whichWF()
@@ -741,5 +648,9 @@ public class Molcasfile {
 	public int getSOCstates()
 	{
 		return nrSOCstates;
+	}
+	public File getFile()
+	{
+		return intfile;
 	}
 }

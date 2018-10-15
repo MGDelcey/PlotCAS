@@ -154,12 +154,12 @@ public class Window extends JFrame {
 	    JMenuItem analorb = new JMenuItem("Orbital contributions");
 	    analorb.addActionListener(new Analorbmenu());
 	    analysis.add(analorb);
-	    /*JMenuItem scatter = new JMenuItem("Scattering");
-	    scatter.addActionListener(new Scatter());
-	    analysis.add(scatter);*/
 	    JMenuItem similarity = new JMenuItem("Similarity");
 	    similarity.addActionListener(new Similarity());
 	    analysis.add(similarity);
+	    JMenuItem scatter = new JMenuItem("Scattering");
+	    scatter.addActionListener(new Scatter());
+	    analysis.add(scatter);
 	    menuBar.add(analysis);
 	    
 	    export = new JMenu("Export");
@@ -578,7 +578,7 @@ public class Window extends JFrame {
 	{
 		this.ncurve++;
 		curve.add(new Curve(pname,ptype,trans,curDefault.get_dbroad(),pinfo,nativeunit));
-		curve.get(this.ncurve-1).setcolor(Plotgraph.colorgen(this.ncurve-1));  // Get different colors
+		curve.get(this.ncurve-1).setcolor(Plotgraph.colorseries(this.ncurve-1));  // Get different colors
 		whichcurve.add(new JCheckBox(pname));
 		whichcurve.get(this.ncurve-1).setSelected(true);
 		whichcurve.get(this.ncurve-1).addActionListener(new Refreshplot());
@@ -1018,7 +1018,7 @@ public class Window extends JFrame {
 			orbitalbutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
 					int icurve=selector.index();
-					curve.get(icurve).transition.analysis(Window.this,curve.get(icurve).getname(),0);
+					curve.get(icurve).transition.analysis(curve.get(icurve).getname(),0);
 					/*Molcasfile molcas = curve.get(icurve).transition.getmolcas();
 					molcas.analysis(curve.get(icurve));*/
 				}
@@ -1089,11 +1089,11 @@ public class Window extends JFrame {
 						// Compute the new curve
 						for(int epos = 0; epos < plot.resolution; epos++)
 						{
-							energy=plot.getx1()+plot.getxde()*plot.plotlist.get(0)[epos];
+							energy=plot.getx1()+plot.getxde()*plot.plotlist.get(0)[epos][0];
 							tmp=0;
 							for(int i = 0; i < Window.this.ncurve; i++)
 							{
-								tmp=tmp+plot.plotlist.get(i+1)[epos]*fact[i];
+								tmp=tmp+plot.plotlist.get(i+1)[epos][0]*fact[i];
 							}
 							writer.write(String.valueOf(energy)+" "+String.valueOf(tmp)+"\n");
 						}
@@ -1363,20 +1363,22 @@ public class Window extends JFrame {
 			l0.add(selector.Box());
 			
 			JPanel l1 = new JPanel();
-			l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));
+			l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));			
+			float x1=plot.getx1();
+			float dE=plot.getxde();
 			l1.add(new JLabel("Incident photon energy range:"));
-			E1inc=new JTextField("");
+			E1inc=new JTextField(String.valueOf(x1));
 			l1.add(E1inc);
-			E2inc=new JTextField("");
+			E2inc=new JTextField(String.valueOf(x1+dE));
 			l1.add(E2inc);
 			optionscreen.add(l1);
 			
 			JPanel l2 = new JPanel();
 			l2.setLayout(new BoxLayout(l2, BoxLayout.LINE_AXIS));
 			l2.add(new JLabel("Energy transfer range:"));
-			E1trans=new JTextField("");
+			E1trans=new JTextField("0");
 			l2.add(E1trans);
-			E2trans=new JTextField("");
+			E2trans=new JTextField("5");
 			l2.add(E2trans);
 			optionscreen.add(l2);
 			
@@ -1392,8 +1394,14 @@ public class Window extends JFrame {
 			startbutton= new JButton("Plot");
 			startbutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
-					//int icurve=selector.index();
-					//Molcasfile molcas = curve.get(icurve).getmolcas();
+					int icurve=selector.index();
+					float e1i=Float.parseFloat(E1inc.getText());
+					float e2i=Float.parseFloat(E2inc.getText());
+					float e1t=Float.parseFloat(E1trans.getText());
+					float e2t=Float.parseFloat(E2trans.getText());
+					int xres=Integer.parseInt(xresol.getText());
+					int yres=Integer.parseInt(yresol.getText());
+					new Scatterplot(curve.get(icurve),e1i,e2i,e1t,e2t,xres,yres,plot.getunit());
 				}
 			});
 			l0.add(startbutton);
@@ -1435,7 +1443,7 @@ public class Window extends JFrame {
 			    	  float tmp;
 			    	  int icurve=selector.index();
 			    	  for (int j=0; j<plot.resolution; j++) {
-			    		  	tmp=plot.getx1()+plot.getxde()*plot.plotlist.get(0)[j];
+			    		  	tmp=plot.getx1()+plot.getxde()*plot.plotlist.get(0)[j][0];
 							message=message+String.format("%f", tmp)+"   "+String.format("%6.3e",plot.plotlist.get(icurve+1)[j])+"\n";
 							}
 			    	  messagearea = new JTextArea(message);
@@ -1537,7 +1545,8 @@ public class Window extends JFrame {
 			    	  Dimension d=new Dimension(width,height);
 			    	  BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 			    	  Graphics ig2 = bi.createGraphics();
-			    	  plot.update(Window.this,ig2,d,true,Integer.parseInt(lwidthfield.getText()));
+			    	  plot.update(ig2,d,true,Integer.parseInt(lwidthfield.getText()));
+			    	  //plot.update(Window.this,ig2,d,true,Integer.parseInt(lwidthfield.getText()));
 			    	  try {
 			    		  if (!selectedFile.getName().endsWith(".png"))
 			    		  {

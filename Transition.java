@@ -26,20 +26,24 @@ public class Transition {
 	/* General */
 	private File transitionfile;
 	public int ntrans;
+	private Window window;
 	
 	/* List input */
 	public Transition(Window tmp,String text)
 	{
+		window=tmp;
 		transfile(tmp.ncurve,tmp.WorkDir);
 		put_to_file(transitionfile,text);
 	}
 	public Transition(Window tmp)
 	{
+		window=tmp;
 		transfile(tmp.ncurve,tmp.WorkDir);
 	}
 	/* MOLCAS input */
 	public Transition(Window tmp,Molcasfile input,boolean dSF, boolean dSOC, boolean ddip, boolean dveloc,boolean dquad, boolean dboltz, float dtemp,int i1,int i2)
 	{
+		window=tmp;
 		molcas=input;
 		isSF=dSF;
 		isSOC=dSOC;
@@ -57,8 +61,9 @@ public class Transition {
     /* ******************************** */
     /* *******     Analysis    ******** */
     /* ******************************** */
-	public void analysis(Window tmp,String parentname,int mode)
+	public void analysis(String parentname,int mode)
 	{
+		Window tmp=window;
 		/* Make list of SOC states for screening */
 		//int[] SOClist=new int[1];
 		//int jtrans=0;
@@ -158,8 +163,110 @@ public class Transition {
 		}
 		
 	}
+    /* ******************************** */
+    /* *******   Scattering    ******** */
+    /* ******************************** */
+	public float[][] scatterplane(float e1i,float e2i,float e1t,float e2t, int xres,int yres,int iunit)
+	{
+		float[][] plane = new float[xres][yres];
+		for (int i = 0; i < xres; i++) { for (int j = 0; j < yres; j++) {plane[i][j]=0;}}
+		
+		float Escale=(float) Curveplot.unitfactor(iunit);
+		/* Store initial->intermediate transitions */
+		int nstates=0;
+		String stop="*SF";
+		if (isSF) { nstates=molcas.getSFstates(); stop="*SF";}
+		else { nstates=molcas.getSOCstates(); stop="*SOC";}
+		int[] position = new int[nstates];
+		for (int istate = 0; istate < nstates; istate++) { position[istate]=-1;}
+		
+		float[] tenergy = new float[ntrans];
+		float[] intensity = new float[ntrans];
+		float[] senergy = new float[nstates];
+		String text;
+		int i1,i2;
+		float ene,intens;
+		int ninter=-1;
+		// Right now only work if only one ground state
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(transitionfile));
+			for (int itrans = 0; itrans < ntrans; itrans++)
+			{
+				text = reader.readLine();
+				ene=Float.parseFloat(text.trim().split(" +")[0]);
+				if (ene>e1i&&ene<e2i)
+				{
+					ninter++;
+					intens=Float.parseFloat(text.trim().split(" +")[1]);
+					i2=Integer.parseInt(text.trim().split(" +")[2])-1;
+					tenergy[ninter]=ene;
+					intensity[ninter]=intens;
+					position[i2]=ninter;
+				}
+			}
+			reader.close();
+			reader = new BufferedReader(new FileReader(molcas.getFile()));
+			boolean passed=false;
+			while ((text = reader.readLine()) != null) {
+				/* Store state energies */
+				if (text.contains(stop))
+				{
+					passed=true;
+					for (int i = 0; i < nstates; i++)
+					{
+						text = reader.readLine();
+						senergy[i]=Float.parseFloat(text.trim().split(" +")[0]);
+					}
+				}
+				/* Read through transitions */
+				if (passed&&((text.contains("*Velocity")&&isdipole&&isveloc)||(text.contains("*Dipole")&&isdipole&&!isveloc)||(text.contains("*Quadrupole")&&isquadrupole)))
+				{
+					int x,y;
+					text = reader.readLine();
+					while (!text.startsWith("*"))
+					{
+						i1=Integer.parseInt(text.trim().split(" +")[0])-1;
+						i2=Integer.parseInt(text.trim().split(" +")[1])-1;
+						intens=Float.parseFloat(text.trim().split(" +")[2]);
+						if (position[i1]>=0)
+						{
+							ene=tenergy[position[i1]]-Escale*(senergy[i1]-senergy[i2]);
+							if ((ene>=e1t)&&(ene<e2t))
+							{
+								intens=intens*intensity[position[i1]];
+								x=(int) ((tenergy[position[i1]]-e1i)/(e2i-e1i)*(float)xres);
+								y=(int) ((ene-e1t)/(e2t-e1t)*(float)yres);
+								plane[x][y]+=intens;
+							}
+						}
+						if (position[i2]>=0)
+						{
+							ene=tenergy[position[i2]]-Escale*(senergy[i2]-senergy[i1]);
+							if ((ene>=e1t)&&(ene<e2t))
+							{
+								intens=intens*intensity[position[i2]];
+								x=(int) ((tenergy[position[i2]]-e1i)/(e2i-e1i)*(float)xres);
+								y=(int) ((ene-e1t)/(e2t-e1t)*(float)yres);
+								plane[x][y]+=intens;
+							}
+						}
+						text = reader.readLine();
+					}
+				}
+			}
+			reader.close();
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(new JFrame(), "Internal I/O error", "Error",JOptionPane.ERROR_MESSAGE);
+			e.printStackTrace();
+		}
+		return plane;
+		
+	}
+	
+
 	/* Gets, sets and utils */
 	
+
 	public Molcasfile getmolcas()
 	{
 		return molcas;

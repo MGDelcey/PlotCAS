@@ -20,10 +20,12 @@ public class Plotgraph extends JPanel {
 	public float maxagap=0;
 	private Window fen;
 	private int ncurve;
+	private boolean is2D;
 	
 	public int resolution=300;
+	private int yresolution=1;
 	public int nplot=-1;
-	public ArrayList<float[]> plotlist = new ArrayList<float[]>();
+	public ArrayList<float[][]> plotlist = new ArrayList<float[][]>();
 	//public float maxAbs=0;
 	private int unit=1;//eV
 
@@ -36,17 +38,30 @@ public class Plotgraph extends JPanel {
 		Dimension d=new Dimension();
 		d=this.getSize();
 		//Plotgraph(fen,g,d,false,1);
-		update(fen,g,d,false,1);
+		update(g,d,false,1);
+		//update(fen,g,d,false,1);
 	}
 	public Plotgraph(Window tmp)
 	{
 		fen=tmp;
 		ncurve=fen.ncurve;
+		is2D=true;
 	}
-	public void update(Window tmp,Graphics g3, Dimension d,boolean isprint, int lwidth)
+	public Plotgraph(int xres,int yres, float e1i, float e2i,float e1t, float e2t, int dunit)
 	{
-		fen=tmp;
-		ncurve=fen.ncurve;
+		is2D=false;
+		ncurve=1;
+		resolution=xres;
+		yresolution=yres;
+		xgrad1=e1i;
+		xscale=e2i-e1i;
+		ygrad1=e1t;
+		yscale=e2t-e1t;
+		unit=dunit;
+	}
+	//public void update(Window tmp,Graphics g3, Dimension d,boolean isprint, int lwidth)
+	public void update(Graphics g3, Dimension d,boolean isprint, int lwidth)
+	{
 		Graphics2D g = (Graphics2D) g3;
 		int x1,y1;
 		float lx,ly;
@@ -55,8 +70,60 @@ public class Plotgraph extends JPanel {
 		lx=d.width/10*8;
 		ly=d.height/10*8;
 		
-		
 		g.setStroke(new BasicStroke(lwidth));
+		
+		/*         2D PLOT : print curves      */
+		if (is2D) ncurve=fen.ncurve;
+		if (is2D)
+		{
+			int[] curve0 = new int[resolution];
+			int[] curvei = new int[resolution];
+			for (int j=0; j<resolution; j++) {
+				curve0[j] = (int) (plotlist.get(0)[j][0] * lx)+x1;
+			}
+			for(int i = 0; i < ncurve; i++)
+			{
+				g.setColor(fen.curve.get(i).getcolor());
+				if (fen.whichcurve.get(i).isSelected())
+				{
+					for (int j=0; j<resolution; j++) {
+						curvei[j] = y1+(int)(ly*(yscale+ygrad1)/yscale)-(int) (plotlist.get(i+1)[j][0] * ly/yscale);
+						}
+					g.drawPolyline(curve0,curvei,resolution);
+				}
+			}
+		}
+		/*         3D PLOT : print color map      */
+		else
+		{
+			if (nplot>=0)
+			{
+				// Find max
+				float max=0;
+				for(int i = 0; i < resolution; i++)
+				{
+					for(int j = 0; j < yresolution; j++)
+					{
+						max=Math.max(plotlist.get(0)[i][j],max);
+					}
+				}
+				int sqx,sqy,sqh,sqw;
+				sqh=(int) ly/yresolution+1;
+				sqw=(int) lx/resolution+1;
+				
+				for(int i = 0; i < resolution; i++)
+				{
+					for(int j = 0; j < yresolution; j++)
+					{
+						g.setColor(colorgen((double) plotlist.get(0)[i][j]/max));
+						sqx=(int) (i*lx/resolution)+x1;
+						sqy=(int) ((yresolution-j-1)*ly/yresolution)+y1;
+						g.fillRect (sqx, sqy, sqw, sqh);
+					}
+				}
+			}
+			
+		}
 		
 		/*   Print axis  */
 		g.setColor(Color.black);
@@ -74,7 +141,14 @@ public class Plotgraph extends JPanel {
 		String label;
 		int stringLen;
 		int stringHei;
-		label="Energies ("+labelunit()+")";
+		if (is2D)
+		{
+			label="Energy ("+labelunit()+")";
+		}
+		else
+		{
+			label="Incident energy ("+labelunit()+")";
+		}
 		stringLen = (int) (g.getFontMetrics().getStringBounds(label, g).getWidth())/2; //here half width
 		stringHei = (int) (g.getFontMetrics().getStringBounds(label, g).getHeight());
 		g.drawString(label,(int)(d.width/2 - stringLen),(int)(d.height-(float)y1/2));
@@ -139,7 +213,7 @@ public class Plotgraph extends JPanel {
 			grad=grad+scale;
 		}
 		/*   Print legend  */
-		if (isprint)
+		if (is2D && isprint)
 		{
 			String name;
 			
@@ -170,24 +244,6 @@ public class Plotgraph extends JPanel {
 					g.drawLine(xpos-(int)(2*(float)x1/10), ypos-(int)(0.3*height),xpos-(int)((float)x1/10), ypos-(int)(0.3*height));
 					ypos=ypos+ (int)(1.1*height);
 				}
-			}
-		}
-		
-		/*   Print curves  */
-		int[] curve0 = new int[resolution];
-		int[] curvei = new int[resolution];
-		for (int j=0; j<resolution; j++) {
-			curve0[j] = (int) (plotlist.get(0)[j] * lx)+x1;
-			}
-		for(int i = 0; i < ncurve; i++)
-		{
-			g.setColor(fen.curve.get(i).getcolor());
-			if (fen.whichcurve.get(i).isSelected())
-			{
-				for (int j=0; j<resolution; j++) {
-					curvei[j] = y1+(int)(ly*(yscale+ygrad1)/yscale)-(int) (plotlist.get(i+1)[j] * ly/yscale);
-					}
-				g.drawPolyline(curve0,curvei,resolution);
 			}
 		}
 	}
@@ -302,30 +358,27 @@ public class Plotgraph extends JPanel {
 	/* *********************************** */
 	/* *******   Color generator   ******* */
 	/* *********************************** */
-	public static Color colorgen(int i)
+	public static Color colorseries(int i)
 	{
-		double H,S,B,base;
+		double base;
 		if (i==0)
 		{
 			return Color.getHSBColor(0,0,0);
 		}
 		else
 		{
-			if (i==1)
-			{
-				base=0;
-			}
-			else
-			{
-				int j=(int) (Math.log((double)(i-1))/Math.log(2))+1;
-				base=(2*(i-1-(int)Math.pow(2, j-1))+1)/(Math.pow(2, j)); // Successively divides space in 2
-			}
-			/* Homemade supposedly clever formula to fit Munsell's colors palette */
-			H=base+Math.sin(3*base*2*Math.PI)/24-1/3;
-			S=0.7+0.3*Math.cos((base+2*Math.pow(base,3))*2/3*Math.PI);
-			B=0.8+0.16*Math.cos((10*base-10*Math.pow(base,2)+6*Math.pow(base,3))/6*4*Math.PI);
-			return Color.getHSBColor((float)H,(float)S,(float)B);
+			base=((i-1)*1.61803398875) % 1; //Golden ratio lack of periodicity should be ideal
+			return colorgen(base);
 		}
+	}
+	/* Homemade supposedly clever formula to fit Munsell's colors palette */
+	public static Color colorgen(double base)
+	{
+		double H,S,B;
+		H=base+Math.sin(3*base*2*Math.PI)/24-1/3;
+		S=0.7+0.3*Math.cos((base+2*Math.pow(base,3))*2/3*Math.PI);
+		B=0.8+0.16*Math.cos((10*base-10*Math.pow(base,2)+6*Math.pow(base,3))/6*4*Math.PI);
+		return Color.getHSBColor((float)H,(float)S,(float)B);
 	}
 	public String labelunit()
 	{
