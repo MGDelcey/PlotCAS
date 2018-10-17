@@ -244,13 +244,14 @@ public class Transition {
 					{
 						i1=Integer.parseInt(text.trim().split(" +")[0])-1;
 						i2=Integer.parseInt(text.trim().split(" +")[1])-1;
+						if (i1==i2) {continue;}
 						intens=Float.parseFloat(text.trim().split(" +")[2]);
 						if (position[i1]>=0)
 						{
 							ene=tenergy[position[i1]]-Escale*(senergy[i1]-senergy[i2]);
-							intens=(float) Math.sqrt(3/2*intens/(senergy[i1]-senergy[i2]));
 							if ((ene>=e1t)&&(ene<e2t))
 							{
+								intens=(float) Math.sqrt(3/2*intens/Math.abs(senergy[i1]-senergy[i2]));
 								intens=intens*intensity[position[i1]];
 								x=(int) ((tenergy[position[i1]]-e1i)/(e2i-e1i)*(float)xres);
 								y=(int) ((ene-e1t)/(e2t-e1t)*(float)yres);
@@ -262,6 +263,7 @@ public class Transition {
 							ene=tenergy[position[i2]]-Escale*(senergy[i2]-senergy[i1]);
 							if ((ene>=e1t)&&(ene<e2t))
 							{
+								intens=(float) Math.sqrt(3/2*intens/Math.abs(senergy[i2]-senergy[i1]));
 								intens=intens*intensity[position[i2]];
 								x=(int) ((tenergy[position[i2]]-e1i)/(e2i-e1i)*(float)xres);
 								y=(int) ((ene-e1t)/(e2t-e1t)*(float)yres);

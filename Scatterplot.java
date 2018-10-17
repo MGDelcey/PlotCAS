@@ -24,7 +24,8 @@ import javax.swing.JTextField;
 
 public class Scatterplot extends JFrame {
 	
-    private JPanel plotscreen = new JPanel();
+	private static final long serialVersionUID = 1L;
+	private JPanel plotscreen = new JPanel();
     private JPanel optionscreen = new JPanel();
     private JPanel container = new JPanel();
     Plotgraph plot;
