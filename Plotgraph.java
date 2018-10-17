@@ -115,7 +115,8 @@ public class Plotgraph extends JPanel {
 				{
 					for(int j = 0; j < yresolution; j++)
 					{
-						g.setColor(colorgen((double) plotlist.get(0)[i][j]/max));
+						g.setColor(colorgen(0.67-(double) plotlist.get(0)[i][j]/max*0.67));
+						//g.setColor(colorgen(0.6+(float) i/resolution/10));
 						sqx=(int) (i*lx/resolution)+x1;
 						sqy=(int) ((yresolution-j-1)*ly/yresolution)+y1;
 						g.fillRect (sqx, sqy, sqw, sqh);

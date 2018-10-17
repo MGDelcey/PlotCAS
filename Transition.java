@@ -187,7 +187,7 @@ public class Transition {
 		int i1,i2;
 		float ene,intens;
 		int ninter=-1;
-		// Right now only work if only one ground state
+		// Right now only work only for degenerate ground states
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(transitionfile));
 			for (int itrans = 0; itrans < ntrans; itrans++)
@@ -196,12 +196,29 @@ public class Transition {
 				ene=Float.parseFloat(text.trim().split(" +")[0]);
 				if (ene>e1i&&ene<e2i)
 				{
-					ninter++;
-					intens=Float.parseFloat(text.trim().split(" +")[1]);
 					i2=Integer.parseInt(text.trim().split(" +")[2])-1;
-					tenergy[ninter]=ene;
-					intensity[ninter]=intens;
-					position[i2]=ninter;
+					if (position[i2]<0)
+					{
+						ninter++;
+						intens=Float.parseFloat(text.trim().split(" +")[1]);
+						tenergy[ninter]=ene;
+						intensity[ninter]=(float) Math.sqrt(3/2*intens/(ene/Escale));
+						position[i2]=ninter;
+					}
+					else
+					{
+						int ipos=position[i2];
+						if (Math.abs(tenergy[ipos]-ene)>(e2i-e1i)/xres)
+						{
+							JOptionPane.showMessageDialog(new JFrame(), "Scattering plots not implemented for non-degenerate ground states", "Error",JOptionPane.ERROR_MESSAGE);
+							break;
+						}
+						else
+						{
+							intens=Float.parseFloat(text.trim().split(" +")[1]);
+							intensity[ipos]+=(float) Math.sqrt(3/2*intens/(ene/Escale));
+						}
+					}
 				}
 			}
 			reader.close();
@@ -231,6 +248,7 @@ public class Transition {
 						if (position[i1]>=0)
 						{
 							ene=tenergy[position[i1]]-Escale*(senergy[i1]-senergy[i2]);
+							intens=(float) Math.sqrt(3/2*intens/(senergy[i1]-senergy[i2]));
 							if ((ene>=e1t)&&(ene<e2t))
 							{
 								intens=intens*intensity[position[i1]];

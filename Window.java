@@ -1376,7 +1376,7 @@ public class Window extends JFrame {
 			JPanel l2 = new JPanel();
 			l2.setLayout(new BoxLayout(l2, BoxLayout.LINE_AXIS));
 			l2.add(new JLabel("Energy transfer range:"));
-			E1trans=new JTextField("0");
+			E1trans=new JTextField("-1");
 			l2.add(E1trans);
 			E2trans=new JTextField("5");
 			l2.add(E2trans);
@@ -1385,9 +1385,9 @@ public class Window extends JFrame {
 			JPanel l3 = new JPanel();
 			l3.setLayout(new BoxLayout(l3, BoxLayout.LINE_AXIS));
 			l3.add(new JLabel("Resolution (x,y):"));
-			xresol=new JTextField("100");
+			xresol=new JTextField("300");
 			l3.add(xresol);
-			yresol=new JTextField("100");
+			yresol=new JTextField("300");
 			l3.add(yresol);
 			optionscreen.add(l3);
 			
