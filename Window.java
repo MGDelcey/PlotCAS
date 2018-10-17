@@ -1401,7 +1401,7 @@ public class Window extends JFrame {
 					float e2t=Float.parseFloat(E2trans.getText());
 					int xres=Integer.parseInt(xresol.getText());
 					int yres=Integer.parseInt(yresol.getText());
-					new Scatterplot(curve.get(icurve),e1i,e2i,e1t,e2t,xres,yres,plot.getunit());
+					new Scatterplot(Window.this,curve.get(icurve),e1i,e2i,e1t,e2t,xres,yres,plot.getunit());
 				}
 			});
 			l0.add(startbutton);

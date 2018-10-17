@@ -2,13 +2,25 @@ package plotCAS;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.JTextField;
 
 public class Scatterplot extends JFrame {
 	
@@ -20,12 +32,26 @@ public class Scatterplot extends JFrame {
     private float[][] scatterplane;
     private float lorentzx,lorentzy,gauss;
     private float xresol,yresol;
+    private JTextField lxfield, lyfield, gfield, extractfield;
+    private int xres, yres;
+    private float e1i,e1t;
+    private JComboBox<String> extractsel;
+    private Window fen;
+    private Curve curve;
     
-	public Scatterplot(Curve curve,float e1i,float e2i,float e1t,float e2t, int xres,int yres, int unit)
+	public Scatterplot(Window dfen,Curve dcurve,float de1i,float e2i,float de1t,float e2t, int dxres,int dyres, int unit)
 	{
 		JOptionPane.showMessageDialog(new JFrame(), "Experimental feature", "Warning",JOptionPane.WARNING_MESSAGE);
 		
-		/*    Create the window   */
+		xres=dxres;
+		yres=dyres;
+		e1i=de1i;
+		e1t=de1t;
+		fen=dfen;
+		curve=dcurve;
+		/* ********************************* */
+		/* ******* Create the window ******* */
+		/* ********************************* */
 		this.setTitle("Scattering plot");
 		this.setSize(800, 500);
 	    this.setLocationRelativeTo(null);
@@ -50,15 +76,17 @@ public class Scatterplot extends JFrame {
 	    plot= new Plotgraph(xres,yres,e1i,e2i,e1t,e2t,unit);
 	    plotscreen.add(plot,BorderLayout.CENTER);
 	    
-	    /*   Compute the spectrum   */
+		/* ************************************ */
+		/* ******* Compute the spectrum ******* */
+		/* ************************************ */
 	    
 		Transition trans=curve.transition;
 	    i1i2plane=trans.scatterplane(e1i,e2i,e1t,e2t,xres,yres,unit); // Product intensity
 	    
 	    // only works for single Lorentzian broadening
 	    lorentzx=curve.getbroad().getlorw1();
-	    lorentzy=curve.getbroad().getlorw1();// as a guess, same broadening
-	    gauss=(float) (curve.getbroad().getgaussw()/Math.sqrt(2.0*Math.log(2)));
+	    lorentzy=0;// as a guess, no broadening
+	    gauss=curve.getbroad().getgaussw();
 	    if (lorentzx==0) { lorentzx=(float) 0.1;}
 	    
 	    xresol=xres/(e2i-e1i);
@@ -70,6 +98,117 @@ public class Scatterplot extends JFrame {
 	    plot.plotlist.add(scatterplane);
 	    plot.nplot++;
 	    plot.repaint();
+	    
+		/* ******************************** */
+		/* *******     Options      ******* */
+		/* ******************************** */
+	    /* Broadenings  */
+
+	    optionscreen.add(new JLabel("Broadenings"));
+	    JPanel l1 = new JPanel();
+		l1.add(new JLabel("Incident Lorentzian (HWHM):"));
+		lxfield  = new JTextField(String.valueOf(lorentzx));
+		l1.add(lxfield);
+		optionscreen.add(l1);
+		
+	    JPanel l2 = new JPanel();
+		l2.add(new JLabel("Transfer Lorentzian (HWHM):"));
+		lyfield  = new JTextField(String.valueOf(lorentzy));
+		l2.add(lyfield);
+		optionscreen.add(l2);
+		
+	    JPanel l3 = new JPanel();
+		l3.add(new JLabel("Gaussian (HWHM):"));
+		gfield  = new JTextField(String.valueOf(gauss));
+		l3.add(gfield);
+		optionscreen.add(l3);
+		
+		JButton redrawbutton=new JButton("Redraw");
+		redrawbutton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent ae) {
+				lorentzx=Float.parseFloat(lxfield.getText());
+				lorentzy=Float.parseFloat(lyfield.getText());
+				gauss=Float.parseFloat(gfield.getText());
+				scatterplane=Broad2D(i1i2plane,xres,yres,e1i,e1t);
+				plot.plotlist.set(0,scatterplane);
+				plot.repaint();
+			}
+		});
+		optionscreen.add(redrawbutton);
+
+		/* Extract 2D curves  */
+		optionscreen.add(new JLabel("Extract graph"));
+		
+		JPanel l4 = new JPanel();
+		extractsel=new JComboBox<String>();
+		extractsel.addItem("Horizontal cut");
+		extractsel.addItem("Vertical cut");
+		//extractsel.addItem("Integration");
+		l4.add(extractsel);
+		optionscreen.add(l4);
+		
+		JPanel l5 = new JPanel();
+		l5.add(new JLabel("Cut energy:"));
+		extractfield  = new JTextField("0.00");
+		l5.add(extractfield);
+		optionscreen.add(l5);
+		
+		JButton extractbutton=new JButton("Extract");
+		extractbutton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent ae) {
+				int imod = extractsel.getSelectedIndex();
+				float ecut=lorentzx=Float.parseFloat(extractfield.getText());
+				int icut;
+				int n=1;
+				float [] result=null;
+				float [] eaxis=null;
+				String namecurve=curve.getname();
+				switch (imod)
+				{
+				case 0:
+					icut=(int) ((ecut-e1t)*yresol);
+					result=new float[xres];
+					eaxis=new float[xres];
+					n=xres;
+					for (int i = 0; i < xres; i++) {
+						result[i]=scatterplane[i][icut];
+						eaxis[i]=i/xresol+e1i;
+					}
+					namecurve=namecurve+" ycut = "+String.valueOf(ecut);
+					break;
+				case 1:
+					icut=(int) ((ecut-e1i)*xresol);
+					result=new float[yres];
+					eaxis=new float[yres];
+					n=yres;
+					for (int i = 0; i < yres; i++) {
+						result[i]=scatterplane[icut][i];
+						eaxis[i]=i/yresol+e1t;
+					}
+					namecurve=namecurve+" xcut = "+String.valueOf(ecut);
+					break;
+				}
+				// Write to file
+				Transition trans=new Transition(fen);
+				File output=trans.getfile();
+				try {
+					BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(output), "utf-8"));
+					for(int i = 0; i <n; i++) {writer.write(String.valueOf(eaxis[i])+" "+String.valueOf(result[i])+"\n");}
+					writer.close();
+	        			fen.addcurve(namecurve,3,trans,"",plot.getunit());
+				}
+				catch (IOException e) {
+					e.printStackTrace();
+					JOptionPane.showMessageDialog(new JFrame(), "Failed to create extracted curve", "Error",JOptionPane.ERROR_MESSAGE);
+				}
+				
+			}
+		});
+		optionscreen.add(extractbutton);
+		
+		optionscreen.revalidate();
+		optionscreen.repaint();
+	    
 	}
 	
 	public float[][] Broad2D(float[][] i1i2plane, int xres, int yres, float e1i, float e1t)
@@ -97,7 +236,7 @@ public class Scatterplot extends JFrame {
 	    				{
 	    					tmpvec[k]+=tmp*B[j-k];
 	    				}
-	    				for (int k = j; k < Math.min(j+span-1, xres); k++)
+	    				for (int k = j; k <= Math.min(j+span-1, xres-1); k++)
 	    				{
 	    					tmpvec[k]+=tmp*B[k-j];
 	    				}
@@ -122,7 +261,7 @@ public class Scatterplot extends JFrame {
 				{
 					tmpvec[k]+=tmp*B[j-k];
 				}
-				for (int k = j; k < Math.min(j+span-1, xres); k++)
+				for (int k = j; k <= Math.min(j+span-1, xres-1); k++)
 				{
 					tmpvec[k]+=tmp*B[k-j];
 				}
@@ -140,8 +279,8 @@ public class Scatterplot extends JFrame {
 	    
 		for (int i = 0; i < xres; i++)
 		{
-			for (int j = 0; j < yres; j++) {tmpvec[j]=0;}
 			float wk=i/xresol+e1i;
+			for (int j = 0; j < yres; j++) {tmpvec[j]=0;}
 			for (int j = 0; j < yres; j++)
 			{
 				tmp=result[i][j];
@@ -149,7 +288,7 @@ public class Scatterplot extends JFrame {
 				{
 					tmpvec[k]+=tmp*B[j-k];
 				}
-				for (int k = j; k < Math.min(j+span-1, yres); k++)
+				for (int k = j; k <= Math.min(j+span-1, yres-1); k++)
 				{
 					tmpvec[k]+=tmp*B[k-j];
 				}
@@ -176,7 +315,7 @@ public class Scatterplot extends JFrame {
 				{
 					tmpvec[k]+=tmp*B[j-k];
 				}
-				for (int k = j; k < Math.min(j+span-1, yres); k++)
+				for (int k = j; k <= Math.min(j+span-1, yres-1); k++)
 				{
 					tmpvec[k]+=tmp*B[k-j];
 				}
@@ -197,8 +336,16 @@ public class Scatterplot extends JFrame {
 		int nx;
 		float span=1;
 		float fact=1;
+		//float broadening=dbroadening;
+		if (mode==3) { broadening=(float) (broadening/Math.sqrt(2.0*Math.log(2)));}
 		float b2=broadening*broadening;
 		float de,de2;
+		if (broadening<=0)
+		{
+			result=new float[1];
+			result[0]=1;
+			return result;
+		}
 		switch (mode)
 		{
 			case 0:
