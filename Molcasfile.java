@@ -314,27 +314,27 @@ public class Molcasfile {
 							writer.write("*SOC\n");
 							skip=false;
 						}
-						if (text.contains("Dipole transition strengths"))
+						if (text.contains("Dipole transition strengths")&&!text.contains("Magnetic"))
 						{
 							isdipole=true;
 							writer.write("*Dipole\n");
+							skip=false;
 						}
 						if (text.contains("Velocity transition strengths"))
 						{
 							isveloc=true;
 							isdipole=true; /* Is it only dipole? */
 							writer.write("*Velocity\n");
+							skip=false;
 						}
-						if (text.contains("Quadrupole transition strengths")||text.contains("Total transition strengths for the second-order expansion"))
+						//if (text.contains("Quadrupole transition strengths")||text.contains("Total transition strengths for the second-order expansion"))
+						if (text.contains("Total transition strengths for the second-order expansion"))
 						{
 							isquadrupole=true;
 							writer.write("*Quadrupole\n");
+							skip=false;
 						}
-						if (text.contains("Problematic transitions have been found"))
-						{
-							skip=true;
-						}
-						if (text.contains("From   To")||text.contains("To  From")||text.contains("From  To"))
+						if (!skip&&(text.contains("From   To")||text.contains("To  From")||text.contains("From  To")))
 						{
 							text = reader.readLine();
 							if (text.contains("Total A"))
@@ -345,19 +345,13 @@ public class Molcasfile {
 							{
 								text = reader.readLine();
 							}
-							if (!skip)
+							while (!text.contains("--"))
 							{
-								while (!text.contains("--"))
-								{
-									writer.write(text+"\n");
-									text = reader.readLine();
-								}
-								writer.write("********\n");
+								writer.write(text+"\n");
+								text = reader.readLine();
 							}
-							else
-							{
-								skip=false;
-							}
+							writer.write("********\n");
+							skip=true;
 						}
 					}
 				}

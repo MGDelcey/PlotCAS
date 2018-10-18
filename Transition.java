@@ -201,6 +201,7 @@ public class Transition {
 					{
 						ninter++;
 						intens=Float.parseFloat(text.trim().split(" +")[1]);
+						if (intens<=0) continue;
 						tenergy[ninter]=ene;
 						intensity[ninter]=(float) Math.sqrt(3/2*intens/(ene/Escale));
 						position[i2]=ninter;
@@ -216,6 +217,7 @@ public class Transition {
 						else
 						{
 							intens=Float.parseFloat(text.trim().split(" +")[1]);
+							if (intens<=0) continue;
 							intensity[ipos]+=(float) Math.sqrt(3/2*intens/(ene/Escale));
 						}
 					}
@@ -244,8 +246,8 @@ public class Transition {
 					{
 						i1=Integer.parseInt(text.trim().split(" +")[0])-1;
 						i2=Integer.parseInt(text.trim().split(" +")[1])-1;
-						if (i1==i2) {continue;}
 						intens=Float.parseFloat(text.trim().split(" +")[2]);
+						if (intens<=0) { text = reader.readLine();continue;}
 						if (position[i1]>=0)
 						{
 							ene=tenergy[position[i1]]-Escale*(senergy[i1]-senergy[i2]);
