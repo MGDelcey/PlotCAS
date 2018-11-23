@@ -298,7 +298,7 @@ public class Scatterplot extends JFrame {
 			{
 				float wkp=j/yresol+e1t;
 				wkp=wk-wkp;
-				result[i][j]=wkp/wk*tmpvec[j];
+				result[i][j]=Math.abs(wkp/wk)*tmpvec[j];
 			}
 		}
 		

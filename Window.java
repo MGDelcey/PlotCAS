@@ -1444,8 +1444,8 @@ public class Window extends JFrame {
 			    	  int icurve=selector.index();
 			    	  for (int j=0; j<plot.resolution; j++) {
 			    		  	tmp=plot.getx1()+plot.getxde()*plot.plotlist.get(0)[j][0];
-							message=message+String.format("%f", tmp)+"   "+String.format("%6.3e",plot.plotlist.get(icurve+1)[j])+"\n";
-							}
+			    		  	message=message+String.format("%f", tmp)+"   "+String.format("%6.3e",plot.plotlist.get(icurve+1)[j][0])+"\n";
+			    	  }
 			    	  messagearea = new JTextArea(message);
 			    	  JScrollPane scrollPane = new JScrollPane(messagearea);
 			    	  scrollPane.setPreferredSize( new Dimension( 500, 500 ) );
