@@ -23,9 +23,10 @@ public class Molcasfile {
 	private boolean isRASSCF=false;
 	private boolean isCASPT2=false;
 	private boolean isMSCASPT2=false;
-	private boolean isdipole=true;
-	private boolean isquadrupole=true;
-	private boolean isveloc=true;
+	private boolean isdipole=false;
+	private boolean isquadrupole=false;
+	private boolean isveloc=false;
+	private boolean isETMO=false;
 	private int nsym=1;
 	private String[] symlabel=null;
 	public String[] orblabel=null;
@@ -59,6 +60,7 @@ public class Molcasfile {
 			int index;
 			double tmp;
 			boolean isfirst=true;
+			boolean fakequadrupole=false;
 			int nroot=0;
 			int nPT2root=0;
 			int nSCFroot=0;
@@ -327,8 +329,18 @@ public class Molcasfile {
 							writer.write("*Velocity\n");
 							skip=false;
 						}
+						if (text.contains("Isotropic transition moment strengths"))
+						{
+							isETMO=true;
+							writer.write("*ETMO\n");
+							skip=false;
+						}
+						if (text.contains("Magnetic-Quadrupole not included")||text.contains("Electric-Octupole not included"))
+						{
+							fakequadrupole=true;
+						}
 						//if (text.contains("Quadrupole transition strengths")||text.contains("Total transition strengths for the second-order expansion"))
-						if (text.contains("Total transition strengths for the second-order expansion"))
+						if (!fakequadrupole&&text.contains("Total transition strengths for the second-order expansion"))
 						{
 							isquadrupole=true;
 							writer.write("*Quadrupole\n");
@@ -368,7 +380,7 @@ public class Molcasfile {
     /* ******************************** */
     /* *******  to transition  ******** */
     /* ******************************** */
-	public void totransition(int iunit, boolean dSF, boolean dSOC, boolean ddip, boolean dveloc,boolean dquad, boolean dboltz, float dtemp, File output, int fromGS, int toGS)
+	public void totransition(int iunit, boolean dSF, boolean dSOC, boolean ddip, boolean dveloc,boolean dquad, boolean dETMO,boolean dboltz, float dtemp, File output, int fromGS, int toGS)
 	{
 		double Escale=1;
 		String text;
@@ -418,7 +430,7 @@ public class Molcasfile {
 					}
 				}
 				if (text.contains("*SOC")) {break;}
-				if (first&&((text.contains("*Velocity")&&ddip&&dveloc)||(text.contains("*Dipole")&&ddip&&!dveloc)||(text.contains("*Quadrupole")&&dquad)))
+				if (first&&((text.contains("*Velocity")&&ddip&&dveloc)||(text.contains("*Dipole")&&ddip&&!dveloc)||(text.contains("*Quadrupole")&&dquad)||(text.contains("*ETMO")&&dETMO)))
 				//if ((text.contains("*Velocity")&&ddip&&dveloc)||(text.contains("*Dipole")&&ddip&&!dveloc)||(text.contains("*Quadrupole")&&dquad))
 				{
 					//first=false;
@@ -638,6 +650,10 @@ public class Molcasfile {
 	public int getSFstates()
 	{
 		return nrSFstates;
+	}
+	public boolean isETMO()
+	{
+		return isETMO;
 	}
 	public int getSOCstates()
 	{

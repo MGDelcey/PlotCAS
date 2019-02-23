@@ -22,6 +22,7 @@ public class Transition {
 	public boolean isboltz=false;
 	public boolean isSF=false;
 	public boolean isSOC=false;
+	public boolean isETMO=false;
 	private Molcasfile molcas; 
 	/* General */
 	private File transitionfile;
@@ -41,7 +42,7 @@ public class Transition {
 		transfile(tmp.ncurve,tmp.WorkDir);
 	}
 	/* MOLCAS input */
-	public Transition(Window tmp,Molcasfile input,boolean dSF, boolean dSOC, boolean ddip, boolean dveloc,boolean dquad, boolean dboltz, float dtemp,int i1,int i2)
+	public Transition(Window tmp,Molcasfile input,boolean dSF, boolean dSOC, boolean ddip, boolean dveloc,boolean dquad, boolean dETMO,boolean dboltz, float dtemp,int i1,int i2)
 	{
 		window=tmp;
 		molcas=input;
@@ -49,13 +50,14 @@ public class Transition {
 		isSOC=dSOC;
 		isdipole=ddip;
 		isveloc=dveloc;
+		isETMO=dETMO;
 		isquadrupole=dquad;
 		Boltztemp=dtemp;
 		isboltz=dboltz;
 		fromGS=i1;
 		toGS=i2;
 		transfile(tmp.ncurve,tmp.WorkDir);
-		input.totransition(tmp.plot.getunit(),dSF, dSOC, ddip, dveloc, dquad, dboltz, dtemp, transitionfile,i1,i2);
+		input.totransition(tmp.plot.getunit(),dSF, dSOC, ddip, dveloc, dquad, dETMO,dboltz, dtemp, transitionfile,i1,i2);
 	}
 	
     /* ******************************** */
@@ -238,7 +240,7 @@ public class Transition {
 					}
 				}
 				/* Read through transitions */
-				if (passed&&((text.contains("*Velocity")&&isdipole&&isveloc)||(text.contains("*Dipole")&&isdipole&&!isveloc)||(text.contains("*Quadrupole")&&isquadrupole)))
+				if (passed&&((text.contains("*Velocity")&&isdipole&&isveloc)||(text.contains("*Dipole")&&isdipole&&!isveloc)||(text.contains("*Quadrupole")&&isquadrupole)||(text.contains("*ETMO")&&isETMO)))
 				{
 					int x,y;
 					text = reader.readLine();

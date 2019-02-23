@@ -267,7 +267,7 @@ public class Window extends JFrame {
 		private File selectedFile;
 		private JLabel filename = new JLabel("");
 		private JRadioButton SFbutton, SOCbutton;
-		private JCheckBox dipolebutton, quadrupolebutton, velocbutton,boltzbutton;
+		private JCheckBox dipolebutton, quadrupolebutton, velocbutton,boltzbutton, ETMObutton;
 		private JTextField ground1, ground2, curvename,boltztemp;
 		Molcasfile molcasinput;
 		JPanel smallbox;
@@ -354,27 +354,69 @@ public class Window extends JFrame {
 			    		  }
 			    		  smallbox.add(l2);
 			    		  
+			    		  ActionListener TMO1 = new ActionListener() {
+			    			  public void actionPerformed(ActionEvent actionEvent) {
+		    					  if (ETMObutton.isSelected())
+		    					  {
+		    						  if (molcasinput.isdipole()) { dipolebutton.setSelected(false);}
+		    						  if (molcasinput.isveloc()) { velocbutton.setSelected(false);}
+		    						  if (molcasinput.isquadrupole()) { quadrupolebutton.setSelected(false);}
+		    					  }
+		    					  else
+		    					  {
+		    						  if (molcasinput.isdipole()) { dipolebutton.setSelected(true);}
+		    						  if (molcasinput.isquadrupole()) { quadrupolebutton.setSelected(true);}
+		    					  }
+		    				  }
+			    		  };
+			    		  ActionListener TMO2 = new ActionListener() {
+			    			  public void actionPerformed(ActionEvent actionEvent) {
+			    				  if ((molcasinput.isveloc()&&velocbutton.isSelected()))
+			    				  {
+			    					  dipolebutton.setSelected(true);
+			    				  }
+		    					  if ((molcasinput.isdipole()&&dipolebutton.isSelected())||(molcasinput.isquadrupole()&&quadrupolebutton.isSelected()))
+		    					  {
+		    						  if (molcasinput.isETMO()) { ETMObutton.setSelected(false);}
+		    					  }
+		    				  }
+			    		  };
+			    		  
 			    		  JPanel l3 = new JPanel();
 			    		  l3.setLayout(new BoxLayout(l3, BoxLayout.LINE_AXIS));
 			    		  if (molcasinput.isdipole())
 			    		  {
 			    			  dipolebutton = new JCheckBox("Dipole transitions");
 			    			  dipolebutton.setSelected(true);
+			    			  dipolebutton.addActionListener(TMO2);
 			    			  l3.add(dipolebutton);
 			    		  }
 			    		  if (molcasinput.isquadrupole())
 			    		  {
 			    			  quadrupolebutton = new JCheckBox("Quadrupole transitions");
 			    			  quadrupolebutton.setSelected(true);
+			    			  quadrupolebutton.addActionListener(TMO2);
 			    			  l3.add(quadrupolebutton);
 			    		  }
 			    		  if (molcasinput.isveloc())
 			    		  {
 			    			  velocbutton = new JCheckBox("Velocity representation");
 			    			  velocbutton.setSelected(false);
+			    			  velocbutton.addActionListener(TMO2);
 			    			  l3.add(velocbutton);
 			    		  }
 			    		  smallbox.add(l3);
+			    		  JPanel l3_2 = new JPanel();
+			    		  l3_2.setLayout(new BoxLayout(l3_2, BoxLayout.LINE_AXIS));
+			    		  if (molcasinput.isETMO())
+			    		  {
+			    			  ETMObutton = new JCheckBox("Exact transition operator");
+			    			  ETMObutton.setSelected(false);
+			    			  ETMObutton.addActionListener(TMO1);
+			    			  l3_2.add(ETMObutton);
+			    			  smallbox.add(l3_2);
+			    		  }
+			    		  
 			    		  
 			    		  JPanel l4 = new JPanel();
 			    		  l4.setLayout(new BoxLayout(l4, BoxLayout.LINE_AXIS));
@@ -406,7 +448,7 @@ public class Window extends JFrame {
 			    		  
 			    		  curvebutton.addActionListener(new ActionListener() {
 						      public void actionPerformed(ActionEvent ae) {
-						    	  boolean isSF,isSOC,isdip,isveloc,isquad;
+						    	  boolean isSF,isSOC,isdip,isveloc,isquad,isETMO;
 						    	  if (molcasinput.getSFstates()<=0){isSF=false;}
 						    	  else {isSF=SFbutton.isSelected();}
 						    	  if (molcasinput.getSOCstates()<=0){isSOC=false;}
@@ -417,12 +459,14 @@ public class Window extends JFrame {
 						    	  else {isquad=quadrupolebutton.isSelected();}
 						    	  if (!molcasinput.isveloc()){isveloc=false;}
 						    	  else {isveloc=velocbutton.isSelected();}
+						    	  if (!molcasinput.isETMO()){isETMO=false;}
+						    	  else {isETMO=ETMObutton.isSelected();}
 						    	  float temp=0;
 						    	  if (boltzbutton.isSelected())
 						    	  {
 						    		  temp=Float.parseFloat(boltztemp.getText());
 						    	  }
-						    	  Transition trans=new Transition(Window.this,molcasinput,isSF,isSOC, isdip,isveloc,isquad,boltzbutton.isSelected(),temp,Integer.parseInt(ground1.getText()),Integer.parseInt(ground2.getText()));
+						    	  Transition trans=new Transition(Window.this,molcasinput,isSF,isSOC, isdip,isveloc,isquad,isETMO,boltzbutton.isSelected(),temp,Integer.parseInt(ground1.getText()),Integer.parseInt(ground2.getText()));
 						    	  addcurve(curvename.getText(),1,trans,"",plot.getunit());
 						      }
 			    		  });
