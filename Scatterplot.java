@@ -7,6 +7,7 @@ import java.awt.event.ActionListener;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 
@@ -14,6 +15,7 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -31,14 +33,15 @@ public class Scatterplot extends JFrame {
     Plotgraph plot;
     private float[][] i1i2plane;
     private float[][] scatterplane;
-    private float lorentzx,lorentzy,gauss;
+    private float lorentzx,lorentzx2,lorentzxE12,lorentzy,gauss;
     private float xresol,yresol;
-    private JTextField lxfield, lyfield, gfield, extractfield;
-    private int xres, yres;
+    private JTextField lxfield,lxfield2,lxfield3, lyfield, gfield, extractfield;
+    private int xres, yres,lorsplit;
     private float e1i,e1t;
     private JComboBox<String> extractsel;
     private Window fen;
     private Curve curve;
+    private boolean isdual;
     
 	public Scatterplot(Window dfen,Curve dcurve,float de1i,float e2i,float de1t,float e2t, int dxres,int dyres, int unit)
 	{
@@ -86,9 +89,13 @@ public class Scatterplot extends JFrame {
 	    
 	    // only works for single Lorentzian broadening
 	    lorentzx=curve.getbroad().getlorw1();
+	    lorentzx2=curve.getbroad().getlorw2();
+	    lorentzxE12=curve.getbroad().getlorsplit();
+	    isdual=curve.getbroad().isduallorentz();
 	    lorentzy=0;// as a guess, no broadening
 	    gauss=curve.getbroad().getgaussw();
 	    if (lorentzx==0) { lorentzx=(float) 0.1;}
+	    lorsplit=xres;
 	    
 	    xresol=xres/(e2i-e1i);
 	    yresol=yres/(e2t-e1t);
@@ -112,6 +119,23 @@ public class Scatterplot extends JFrame {
 		l1.add(lxfield);
 		optionscreen.add(l1);
 		
+		if (isdual)
+		{
+			JPanel l1_2 = new JPanel();
+			l1_2.add(new JLabel("Second Lorentzian (HWHM):"));
+			lxfield2  = new JTextField(String.valueOf(lorentzx2));
+			l1_2.add(lxfield2);
+			optionscreen.add(l1_2);
+		
+			JPanel l1_3 = new JPanel();
+			l1_3.add(new JLabel("Lorentzian split energy:"));
+			lxfield3  = new JTextField(String.valueOf(lorentzxE12));
+			l1_3.add(lxfield3);
+			optionscreen.add(l1_3);
+			
+			lorsplit=(int) ((lorentzxE12-e1i)*xresol);
+		}
+		
 	    JPanel l2 = new JPanel();
 		l2.add(new JLabel("Transfer Lorentzian (HWHM):"));
 		lyfield  = new JTextField(String.valueOf(lorentzy));
@@ -128,6 +152,12 @@ public class Scatterplot extends JFrame {
 		redrawbutton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
 				lorentzx=Float.parseFloat(lxfield.getText());
+				if (isdual)
+				{
+					lorentzx2=Float.parseFloat(lxfield2.getText());
+					lorentzxE12=Float.parseFloat(lxfield3.getText());
+					lorsplit=(int) ((lorentzxE12-e1i)*xresol);
+				}
 				lorentzy=Float.parseFloat(lyfield.getText());
 				gauss=Float.parseFloat(gfield.getText());
 				scatterplane=Broad2D(i1i2plane,xres,yres,e1i,e1t);
@@ -154,6 +184,7 @@ public class Scatterplot extends JFrame {
 		l5.add(extractfield);
 		optionscreen.add(l5);
 		
+		/* Extract cuts */
 		JButton extractbutton=new JButton("Extract");
 		extractbutton.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent ae) {
@@ -207,6 +238,37 @@ public class Scatterplot extends JFrame {
 		});
 		optionscreen.add(extractbutton);
 		
+		/* Export curves */
+		JButton exportbutton=new JButton("Export xyz plane");
+		exportbutton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent ae) {
+			  try {
+				String filename = JOptionPane.showInputDialog("Name this file");
+				JFileChooser fcPick = new JFileChooser();
+				fcPick.setSelectedFile(new File(filename));
+				int sf = fcPick.showSaveDialog(null);
+		        if(sf == JFileChooser.APPROVE_OPTION){
+		    	  		BufferedWriter writer = new BufferedWriter(new FileWriter(fcPick.getSelectedFile()));
+		    	  		float e1,e2;
+		    	  		for (int i=0; i<xres; i++) {
+		    	  			e1=i/xresol+e1i;;
+		    	  			for (int j=0; j<yres; j++) {
+		    	  				e2=j/yresol+e1t;;
+		    	  				writer.write(String.format("%f", e1)+"   "+String.format("%f", e2)+"   "+String.format("%6.3e",scatterplane[i][j])+"\n");
+		    	  			}
+		    	  		}
+			    	  	writer.close();
+		    	  	}
+			  }
+			  catch (IOException e) {
+				  e.printStackTrace();
+				  JOptionPane.showMessageDialog(new JFrame(), "Failed to create xyz file", "Error",JOptionPane.ERROR_MESSAGE);
+				  }
+		    	  	
+			}
+		});
+		optionscreen.add(exportbutton);
+		
 		optionscreen.revalidate();
 		optionscreen.repaint();
 	    
@@ -216,41 +278,54 @@ public class Scatterplot extends JFrame {
 	{
 		float [][] result=new float[xres][yres];
 	    float[] tmpvec=new float[Math.max(xres,yres)];
-	    float [] B;
-	    int span;
+	    float [] B,B2;
+	    int span,span2;
 	    
 	    /* x-axis broadening */
 	    float tmp=0;
-	    for (int i = 0; i < xres; i++) {for (int j = 0; j < yres; j++) {result[i][j]=0;}}
 	    
 	    for (int imod = 0; imod <= 1; imod++) // Real and imaginary parts
 	    {
-		    B=broadvec(lorentzx,imod);
+		    B=broadvec(lorentzx,imod,xresol);
+		    B2=broadvec(lorentzx2,imod,xresol);
 		    span=B.length;
+		    span2=B2.length;
 	    		for (int i = 0; i < yres; i++)
 	    		{
 	    			for (int j = 0; j < xres; j++) {tmpvec[j]=0;}
-	    			for (int j = 0; j < xres; j++)
+	    			for (int j = 0; j < lorsplit; j++)
 	    			{
 	    				tmp=i1i2plane[j][i];
 	    				for (int k = Math.max(0,j-span+1); k < j; k++)
 	    				{
 	    					tmpvec[k]+=tmp*B[j-k];
 	    				}
-	    				for (int k = j; k <= Math.min(j+span-1, xres-1); k++)
+	    				for (int k = j; k < Math.min(j+span, xres); k++)
 	    				{
 	    					tmpvec[k]+=tmp*B[k-j];
 	    				}
 	    			}
+	    			for (int j = lorsplit; j < xres; j++)
+	    			{
+	    				tmp=i1i2plane[j][i];
+	    				for (int k = Math.max(0,j-span2+1); k < j; k++)
+	    				{
+	    					tmpvec[k]+=tmp*B2[j-k];
+	    				}
+	    				for (int k = j; k < Math.min(j+span2, xres); k++)
+	    				{
+	    					tmpvec[k]+=tmp*B2[k-j];
+	    				}
+	    			}
 	    			for (int j = 0; j < xres; j++)
 	    			{
-	    				result[j][i]+=tmpvec[j]*tmpvec[j];
+	    				result[j][i]=tmpvec[j]*tmpvec[j];
 	    			}
 	    		}
 		}
 	    
 		/* x-axis Gaussian broadening */
-	    B=broadvec(gauss,3);
+	    B=broadvec(gauss,3,xresol);
 	    span=B.length;
 		for (int i = 0; i < yres; i++)
 		{
@@ -269,13 +344,13 @@ public class Scatterplot extends JFrame {
 			}
 			for (int j = 0; j < xres; j++)
 			{
-				result[j][i]+=tmpvec[j];
+				result[j][i]=tmpvec[j];
 			}
 		}
 		
 		
 		/* y-axis Lorentzian broadening */
-	    B=broadvec(lorentzy,1);
+	    B=broadvec(lorentzy,2,yresol);
 	    span=B.length;
 	    
 		for (int i = 0; i < xres; i++)
@@ -303,7 +378,7 @@ public class Scatterplot extends JFrame {
 		}
 		
 		/* y-axis Gaussian broadening */
-	    B=broadvec(gauss,3);
+	    B=broadvec(gauss,3,yresol);
 	    span=B.length;
 	    
 		for (int i = 0; i < xres; i++)
@@ -330,7 +405,7 @@ public class Scatterplot extends JFrame {
 		return result;
 	}
 	/* Broadening Vector */
-	public float[] broadvec(float broadening, int mode)
+	public float[] broadvec(float broadening, int mode,float resol)
 	{
 		float [] result;
 		double tol=0.01;
@@ -344,7 +419,7 @@ public class Scatterplot extends JFrame {
 		if (broadening<=0)
 		{
 			result=new float[1];
-			result[0]=1;
+			result[0]=resol;
 			return result;
 		}
 		switch (mode)
@@ -358,15 +433,14 @@ public class Scatterplot extends JFrame {
 				span=(float) Math.sqrt((1-tol)/tol)*broadening;
 				break;
 			case 3:
-				fact=(float) (1/(Math.sqrt(2*Math.PI)*broadening));
+				fact=(float) (1/(Math.sqrt(2*Math.PI)*broadening))/resol; // /resol is the integrator for convolution
 				span=(float) Math.sqrt(-Math.log(tol)*2*b2);
 		}
-		nx=(int) (span*xresol)+1;
+		nx=(int) (span*resol)+1;
 		result=new float[nx];
-		
 		for (int i = 0; i < nx; i++)
 		{
-			de=(i/xresol);
+			de=(i/resol);
 			de2=de*de;
 			switch (mode)
 			{

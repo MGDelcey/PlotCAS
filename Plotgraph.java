@@ -115,8 +115,7 @@ public class Plotgraph extends JPanel {
 				{
 					for(int j = 0; j < yresolution; j++)
 					{
-						g.setColor(colorgen(0.67-(double) plotlist.get(0)[i][j]/max*0.67));
-						//g.setColor(colorgen(0.6+(float) i/resolution/10));
+						g.setColor(colorgen((double) plotlist.get(0)[i][j]/max));
 						sqx=(int) (i*lx/resolution)+x1;
 						sqy=(int) ((yresolution-j-1)*ly/yresolution)+y1;
 						g.fillRect (sqx, sqy, sqw, sqh);
@@ -369,11 +368,22 @@ public class Plotgraph extends JPanel {
 		else
 		{
 			base=((i-1)*1.61803398875) % 1; //Golden ratio lack of periodicity should be ideal
-			return colorgen(base);
+			return colorgen2(base);
 		}
 	}
-	/* Homemade supposedly clever formula to fit Munsell's colors palette */
+	/* Homemade supposedly clever formula to fit a typical heat map scale */
 	public static Color colorgen(double base)
+	{
+		//base=0.65-0.65*(0.8*base+0.2*Math.sqrt(base));
+		base=0.65-0.65*base;
+		double H,S,B;
+		H=base;
+		S=0.75+0.2*Math.cos((1-base+2*Math.pow(1-base,3))*2/3*Math.PI);
+		B=1.0/(1+Math.exp(20*(base-0.65)));
+		return Color.getHSBColor((float)H,(float)S,(float)B);
+	}
+	/* Homemade supposedly clever formula to fit Munsell's colors palette */
+	public static Color colorgen2(double base)
 	{
 		double H,S,B;
 		H=base+Math.sin(3*base*2*Math.PI)/24-1/3;

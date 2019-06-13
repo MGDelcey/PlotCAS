@@ -287,6 +287,7 @@ public class Transition {
 						}
 						text = reader.readLine();
 					}
+					passed=false;
 				}
 			}
 			reader.close();
