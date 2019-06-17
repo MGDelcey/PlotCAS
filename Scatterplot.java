@@ -133,7 +133,7 @@ public class Scatterplot extends JFrame {
 			l1_3.add(lxfield3);
 			optionscreen.add(l1_3);
 			
-			lorsplit=(int) ((lorentzxE12-e1i)*xresol);
+			lorsplit=Math.min((int) ((lorentzxE12-e1i)*xresol),xres);
 		}
 		
 	    JPanel l2 = new JPanel();
@@ -156,7 +156,7 @@ public class Scatterplot extends JFrame {
 				{
 					lorentzx2=Float.parseFloat(lxfield2.getText());
 					lorentzxE12=Float.parseFloat(lxfield3.getText());
-					lorsplit=(int) ((lorentzxE12-e1i)*xresol);
+					lorsplit=Math.min((int) ((lorentzxE12-e1i)*xresol),xres);
 				}
 				lorentzy=Float.parseFloat(lyfield.getText());
 				gauss=Float.parseFloat(gfield.getText());
@@ -174,7 +174,7 @@ public class Scatterplot extends JFrame {
 		extractsel=new JComboBox<String>();
 		extractsel.addItem("Horizontal cut");
 		extractsel.addItem("Vertical cut");
-		//extractsel.addItem("Integration");
+		extractsel.addItem("Vertical Integration");
 		l4.add(extractsel);
 		optionscreen.add(l4);
 		
@@ -218,6 +218,21 @@ public class Scatterplot extends JFrame {
 						eaxis[i]=i/yresol+e1t;
 					}
 					namecurve=namecurve+" xcut = "+String.valueOf(ecut);
+					break;
+				case 2:
+					result=new float[xres];
+					eaxis=new float[xres];
+					float tmp;
+					n=xres;
+					for (int i = 0; i < xres; i++) {
+						tmp=0;
+						for (int j = 0; j < yres; j++) {
+							tmp+=scatterplane[i][j];
+						}
+						result[i]=tmp;
+						eaxis[i]=i/xresol+e1i;
+					}
+					namecurve=namecurve+" fluo. yield";
 					break;
 				}
 				// Write to file
@@ -402,6 +417,23 @@ public class Scatterplot extends JFrame {
 			}
 		}
 	    //result=i1i2plane; //For testing purposes
+		// Normalize
+		float max=0;
+		for(int i = 0; i < xres; i++)
+		{
+			for(int j = 0; j < yres; j++)
+			{
+				max=Math.max(result[i][j],max);
+			}
+		}
+		for(int i = 0; i < xres; i++)
+		{
+			for(int j = 0; j < yres; j++)
+			{
+				result[i][j]=result[i][j]/max;
+			}
+		}
+		//
 		return result;
 	}
 	/* Broadening Vector */
