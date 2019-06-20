@@ -45,7 +45,7 @@ public class Scatterplot extends JFrame {
     
 	public Scatterplot(Window dfen,Curve dcurve,float de1i,float e2i,float de1t,float e2t, int dxres,int dyres, int unit)
 	{
-		JOptionPane.showMessageDialog(new JFrame(), "Experimental feature", "Warning",JOptionPane.WARNING_MESSAGE);
+		//JOptionPane.showMessageDialog(new JFrame(), "Experimental feature", "Warning",JOptionPane.WARNING_MESSAGE);
 		
 		xres=dxres;
 		yres=dyres;
@@ -95,10 +95,12 @@ public class Scatterplot extends JFrame {
 	    lorentzy=0;// as a guess, no broadening
 	    gauss=curve.getbroad().getgaussw();
 	    if (lorentzx==0) { lorentzx=(float) 0.1;}
-	    lorsplit=xres;
 	    
 	    xresol=xres/(e2i-e1i);
 	    yresol=yres/(e2t-e1t);
+	    
+	    lorsplit=xres;
+	    if (isdual) {lorsplit=Math.min((int) ((lorentzxE12-e1i)*xresol),xres);}
 	    
 	    scatterplane=Broad2D(i1i2plane,xres,yres,e1i,e1t);
 	   
@@ -132,8 +134,6 @@ public class Scatterplot extends JFrame {
 			lxfield3  = new JTextField(String.valueOf(lorentzxE12));
 			l1_3.add(lxfield3);
 			optionscreen.add(l1_3);
-			
-			lorsplit=Math.min((int) ((lorentzxE12-e1i)*xresol),xres);
 		}
 		
 	    JPanel l2 = new JPanel();
@@ -298,6 +298,7 @@ public class Scatterplot extends JFrame {
 	    
 	    /* x-axis broadening */
 	    float tmp=0;
+	    for (int i = 0; i < xres; i++) {for (int j = 0; j < yres; j++) {result[i][j]=0;}}
 	    
 	    for (int imod = 0; imod <= 1; imod++) // Real and imaginary parts
 	    {
@@ -334,7 +335,7 @@ public class Scatterplot extends JFrame {
 	    			}
 	    			for (int j = 0; j < xres; j++)
 	    			{
-	    				result[j][i]=tmpvec[j]*tmpvec[j];
+	    				result[j][i]=+tmpvec[j]*tmpvec[j];
 	    			}
 	    		}
 		}
