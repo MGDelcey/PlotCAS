@@ -168,10 +168,8 @@ public class Transition {
     /* ******************************** */
     /* *******   Scattering    ******** */
     /* ******************************** */
-	public float[][] scatterplane(float e1i,float e2i,float e1t,float e2t, int xres,int yres,int iunit)
+	public float[][] scatterplane(float e1i,float e2i,float e1t,float e2t, int xres,int yres,int iunit,boolean isbefore)
 	{
-		float[][] plane = new float[xres][yres];
-		for (int i = 0; i < xres; i++) { for (int j = 0; j < yres; j++) {plane[i][j]=0;}}
 		
 		float Escale=(float) Curveplot.unitfactor(iunit);
 		/* Store initial->intermediate transitions */
@@ -186,12 +184,13 @@ public class Transition {
 		float[] intensity = new float[ntrans];
 		float[] senergy = new float[nstates];
 		String text;
-		int i1,i2;
+		int i1=0,i2;
 		float ene,intens;
 		int ninter=-1;
 		// Right now only work only for degenerate ground states
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(transitionfile));
+			text="";
 			for (int itrans = 0; itrans < ntrans; itrans++)
 			{
 				text = reader.readLine();
@@ -205,7 +204,13 @@ public class Transition {
 						intens=Float.parseFloat(text.trim().split(" +")[1]);
 						if (intens<=0) continue;
 						tenergy[ninter]=ene;
-						intensity[ninter]=(float) Math.sqrt(3/2*intens/(ene/Escale));
+						if (isbefore) {
+							intensity[ninter]=3/2*intens/(ene/Escale);
+						}
+						else{
+							intensity[ninter]=(float) Math.sqrt(3/2*intens/(ene/Escale));
+						}
+						
 						position[i2]=ninter;
 					}
 					else
@@ -220,24 +225,78 @@ public class Transition {
 						{
 							intens=Float.parseFloat(text.trim().split(" +")[1]);
 							if (intens<=0) continue;
-							intensity[ipos]+=(float) Math.sqrt(3/2*intens/(ene/Escale));
+							if (isbefore) {
+								intensity[ipos]+=3/2*intens/(ene/Escale);
+							}
+							else {
+								intensity[ipos]+=(float) Math.sqrt(3/2*intens/(ene/Escale));
+							}
+							
 						}
 					}
 				}
 			}
+			i1=Integer.parseInt(text.trim().split(" +")[3])-1;
 			reader.close();
+			
+			
 			reader = new BufferedReader(new FileReader(molcas.getFile()));
+			while ((text = reader.readLine()) != null) {
+				/* Store state energies */
+				if (text.contains(stop))
+				{
+					for (int i = 0; i < nstates; i++)
+					{
+						text = reader.readLine();
+						senergy[i]=Float.parseFloat(text.trim().split(" +")[0]);
+					}
+					break;
+				}
+			}
+			reader.close();
+
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(new JFrame(), "Internal I/O error", "Error",JOptionPane.ERROR_MESSAGE);
+			e.printStackTrace();
+		}
+		
+		/* Find the first and last final states (they are energy ordered)*/
+		float e0=senergy[i1];
+		boolean first=true;
+		int ifirst=0,ilast=0;
+		for (int i = 0; i < nstates; i++)
+		{
+			ene=Escale*(senergy[i]-e0);
+			if ((ene>=e1t)&&(ene<e2t))
+			{
+				if (first)
+				{
+					first=false;
+					ifirst=i;
+				}
+				ilast=i;
+			}
+		}
+		int nfinal=ilast-ifirst+1;
+		
+		
+		float[][] plane = new float[xres+1][nfinal];
+		for (int i = 0; i < xres; i++) {for (int j = 0; j < nfinal; j++) {plane[i][j]=0;}}
+		for (int j = 0; j < nfinal; j++) {plane[xres][j]=Escale*(senergy[j]-e0);}
+		
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(molcas.getFile()));
 			boolean passed=false;
 			while ((text = reader.readLine()) != null) {
 				/* Store state energies */
 				if (text.contains(stop))
 				{
 					passed=true;
-					for (int i = 0; i < nstates; i++)
-					{
-						text = reader.readLine();
-						senergy[i]=Float.parseFloat(text.trim().split(" +")[0]);
-					}
+					text = reader.readLine();
+				}
+				if (text.contains("*SOC"))
+				{
+					passed=false;
 				}
 				/* Read through transitions */
 				if (passed&&((text.contains("*Velocity")&&isdipole&&isveloc)||(text.contains("*Dipole")&&isdipole&&!isveloc)||(text.contains("*Quadrupole")&&isquadrupole)||(text.contains("*ETMO")&&isETMO)))
@@ -260,10 +319,16 @@ public class Transition {
 								if (dE>0)
 								{
 									dE=(float) Math.max(dE,0.0001);
-									intens=(float) Math.sqrt(3/2*intens/dE);
+									if (isbefore) {
+										intens=3/2*intens/dE;
+									}
+									else {
+										intens=(float) Math.sqrt(3/2*intens/dE);
+									}
 									intens=intens*intensity[position[i1]];
 									x=(int) ((tenergy[position[i1]]-e1i)/(e2i-e1i)*(float)xres);
-									y=(int) ((ene-e1t)/(e2t-e1t)*(float)yres);
+									//y=(int) ((ene-e1t)/(e2t-e1t)*(float)yres);
+									y=i2-ifirst;
 									plane[x][y]+=intens;
 								}
 							}
@@ -277,17 +342,22 @@ public class Transition {
 								if (dE>0)
 								{
 									dE=(float) Math.max(dE,0.0001);
-									intens=(float) Math.sqrt(3/2*intens/dE);
+									if (isbefore) {
+										intens=3/2*intens/dE;
+									}
+									else {
+										intens=(float) Math.sqrt(3/2*intens/dE);
+									}
 									intens=intens*intensity[position[i2]];
 									x=(int) ((tenergy[position[i2]]-e1i)/(e2i-e1i)*(float)xres);
-									y=(int) ((ene-e1t)/(e2t-e1t)*(float)yres);
+									//y=(int) ((ene-e1t)/(e2t-e1t)*(float)yres);
+									y=i1-ifirst;
 									plane[x][y]+=intens;
 								}
 							}
 						}
 						text = reader.readLine();
 					}
-					passed=false;
 				}
 			}
 			reader.close();

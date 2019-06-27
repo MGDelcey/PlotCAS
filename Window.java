@@ -1397,6 +1397,7 @@ public class Window extends JFrame {
 		private JTextField xresol;
 		private JTextField yresol;
 		private CurveSel selector;
+		private JRadioButton sqbefore, sqafter;
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
 			optiontitle.setText("2-D scattering plots");
@@ -1435,6 +1436,15 @@ public class Window extends JFrame {
 			l3.add(yresol);
 			optionscreen.add(l3);
 			
+			JPanel l4 = new JPanel();
+			l4.setLayout(new BoxLayout(l4, BoxLayout.LINE_AXIS));
+			ButtonGroup GsqGroup = new ButtonGroup();
+			sqbefore = new JRadioButton("Neglect interference");
+			sqbefore.setSelected(false);
+			GsqGroup.add(sqbefore);
+			l4.add(sqbefore);
+			optionscreen.add(l4);
+			
 			startbutton= new JButton("Plot");
 			startbutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
@@ -1445,7 +1455,8 @@ public class Window extends JFrame {
 					float e2t=Float.parseFloat(E2trans.getText());
 					int xres=Integer.parseInt(xresol.getText());
 					int yres=Integer.parseInt(yresol.getText());
-					new Scatterplot(Window.this,curve.get(icurve),e1i,e2i,e1t,e2t,xres,yres,plot.getunit());
+					boolean isbefore = sqbefore.isSelected();
+					new Scatterplot(Window.this,curve.get(icurve),e1i,e2i,e1t,e2t,xres,yres,isbefore,plot.getunit());
 				}
 			});
 			l0.add(startbutton);

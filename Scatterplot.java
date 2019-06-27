@@ -41,9 +41,9 @@ public class Scatterplot extends JFrame {
     private JComboBox<String> extractsel;
     private Window fen;
     private Curve curve;
-    private boolean isdual;
+    private boolean isdual,isbefore;
     
-	public Scatterplot(Window dfen,Curve dcurve,float de1i,float e2i,float de1t,float e2t, int dxres,int dyres, int unit)
+	public Scatterplot(Window dfen,Curve dcurve,float de1i,float e2i,float de1t,float e2t, int dxres,int dyres, boolean dbefore, int unit)
 	{
 		//JOptionPane.showMessageDialog(new JFrame(), "Experimental feature", "Warning",JOptionPane.WARNING_MESSAGE);
 		
@@ -53,6 +53,7 @@ public class Scatterplot extends JFrame {
 		e1t=de1t;
 		fen=dfen;
 		curve=dcurve;
+		isbefore=dbefore;
 		/* ********************************* */
 		/* ******* Create the window ******* */
 		/* ********************************* */
@@ -85,7 +86,7 @@ public class Scatterplot extends JFrame {
 		/* ************************************ */
 	    
 		Transition trans=curve.transition;
-	    i1i2plane=trans.scatterplane(e1i,e2i,e1t,e2t,xres,yres,unit); // Product intensity
+	    i1i2plane=trans.scatterplane(e1i,e2i,e1t,e2t,xres,yres,unit,isbefore); // Product intensity
 	    
 	    // only works for single Lorentzian broadening
 	    lorentzx=curve.getbroad().getlorw1();
@@ -229,7 +230,7 @@ public class Scatterplot extends JFrame {
 						for (int j = 0; j < yres; j++) {
 							tmp+=scatterplane[i][j];
 						}
-						result[i]=tmp;
+						result[i]=tmp/yresol;
 						eaxis[i]=i/xresol+e1i;
 					}
 					namecurve=namecurve+" fluo. yield";
@@ -295,23 +296,30 @@ public class Scatterplot extends JFrame {
 	    float[] tmpvec=new float[Math.max(xres,yres)];
 	    float [] B,B2;
 	    int span,span2;
+	    int nfinal=i1i2plane[0].length;
 	    
-	    /* x-axis broadening */
+	    /* x-axis Lorentzian-ish broadening */
 	    float tmp=0;
 	    for (int i = 0; i < xres; i++) {for (int j = 0; j < yres; j++) {result[i][j]=0;}}
 	    
-	    for (int imod = 0; imod <= 1; imod++) // Real and imaginary parts
+	    int istart=0;
+	    int iend=1;
+	    if (isbefore) { istart=4; iend=4;}
+	    
+	    for (int imod = istart; imod <= iend; imod++) // Real and imaginary parts
 	    {
 		    B=broadvec(lorentzx,imod,xresol);
 		    B2=broadvec(lorentzx2,imod,xresol);
 		    span=B.length;
 		    span2=B2.length;
-	    		for (int i = 0; i < yres; i++)
+	    		for (int i2 = 0; i2 < nfinal; i2++)
 	    		{
+	    			int i=(int) ((i1i2plane[xres][i2]-e1t)*yresol);
+	    			if (i>=yres) { break;}
 	    			for (int j = 0; j < xres; j++) {tmpvec[j]=0;}
 	    			for (int j = 0; j < lorsplit; j++)
 	    			{
-	    				tmp=i1i2plane[j][i];
+	    				tmp=i1i2plane[j][i2];
 	    				for (int k = Math.max(0,j-span+1); k < j; k++)
 	    				{
 	    					tmpvec[k]+=tmp*B[j-k];
@@ -323,7 +331,7 @@ public class Scatterplot extends JFrame {
 	    			}
 	    			for (int j = lorsplit; j < xres; j++)
 	    			{
-	    				tmp=i1i2plane[j][i];
+	    				tmp=i1i2plane[j][i2];
 	    				for (int k = Math.max(0,j-span2+1); k < j; k++)
 	    				{
 	    					tmpvec[k]+=tmp*B2[j-k];
@@ -333,10 +341,20 @@ public class Scatterplot extends JFrame {
 	    					tmpvec[k]+=tmp*B2[k-j];
 	    				}
 	    			}
-	    			for (int j = 0; j < xres; j++)
-	    			{
-	    				result[j][i]=+tmpvec[j]*tmpvec[j];
+	    			if (isbefore) {
+	    				for (int j = 0; j < xres; j++)
+		    			{
+		    				result[j][i]+=tmpvec[j];
+		    			}
 	    			}
+	    			else
+	    			{
+	    				for (int j = 0; j < xres; j++)
+		    			{
+		    				result[j][i]+=tmpvec[j]*tmpvec[j];
+		    			}
+	    			}
+	    			
 	    		}
 		}
 	    
@@ -468,6 +486,9 @@ public class Scatterplot extends JFrame {
 			case 3:
 				fact=(float) (1/(Math.sqrt(2*Math.PI)*broadening))/resol; // /resol is the integrator for convolution
 				span=(float) Math.sqrt(-Math.log(tol)*2*b2);
+			case 4:
+				span=(float) Math.sqrt((1-tol)/tol)*broadening;
+				break;	
 		}
 		nx=(int) (span*resol)+1;
 		result=new float[nx];
@@ -486,6 +507,9 @@ public class Scatterplot extends JFrame {
 				break;
 			case 3:
 				result[i]=fact*(float)Math.exp(-de2/(2*b2));
+				break;
+			case 4:
+				result[i]=1/(b2+de2);
 				break;
 			}
 		}
