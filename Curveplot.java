@@ -359,16 +359,16 @@ public class Curveplot {
 		}
 		return position;
 	}
-	public static String similarity(Plotgraph plot,int i1,int i2,int imethod){
+	public static String similarity(Plotgraph plot,int i1,int i2,int imethod,float width){
 		int resolution=plot.resolution;
 		//float estart=plot.getx1();
 		float egap=plot.getxde();
 		String result="";
 		//double resol=(double) egap/(double) resolution;
+		double norm=0, norm1=0, norm2=0;
 		switch (imethod)
 		{
 			case 0: // Euclidian similarity
-				double norm=0;
 				for (int epos = 0; epos < resolution; epos++)
 				{
 					norm+=Math.pow((double) plot.plotlist.get(i1+1)[epos][0]-plot.plotlist.get(i2+1)[epos][0],2);
@@ -377,7 +377,6 @@ public class Curveplot {
 				result="Euclidian distance between the two curves : "+String.valueOf(norm);
 				break;
 			case 1: // Cosine similarity
-				double norm1=0; double norm2=0;
 				double product=0;
 				for (int epos = 0; epos < resolution; epos++)
 				{
@@ -387,6 +386,39 @@ public class Curveplot {
 				}
 				product=product/Math.sqrt(norm1)/Math.sqrt(norm2);
 				result="Cosine similarity between the two curves : "+String.valueOf(product);
+				break;
+			case 2: // Gaussian-weighted correlation function
+				egap=egap/(float)resolution;
+				float width2=width;
+				width=(float) (width/Math.sqrt(2.0*Math.log(2)));
+				float w2=width*width;
+				double tol=0.01;
+				float span=(float) Math.sqrt(-Math.log(tol)*2*w2);
+				int ispan=(int) (span/egap);
+				for (int wpos = -ispan; wpos <= ispan; wpos++)
+				{
+					double tmp=0, tmp1=0, tmp2=0;
+					float de2=wpos*egap;
+					de2=de2*de2;
+					float fact=1;
+					if (w2>0.0001)
+					{
+						fact=(float) Math.exp(-de2/(2*w2));
+					}	// If width is 0, span is 0, so only one point of weight 1.
+					
+					for (int epos = Math.max(-wpos, 0); epos < Math.min(resolution-wpos, resolution); epos++)
+					{
+						tmp+=Math.pow((double) plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i2+1)[epos+wpos][0],2);
+						tmp1+=Math.pow((double) plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i1+1)[epos+wpos][0],2);
+						tmp2+=Math.pow((double) plot.plotlist.get(i2+1)[epos][0]*plot.plotlist.get(i2+1)[epos+wpos][0],2);
+					}
+					norm=norm+tmp*fact;
+					norm1=norm1+tmp1*fact;
+					norm2=norm2+tmp2*fact;
+				}
+				norm=norm/Math.sqrt(norm1*norm2);
+				result="Gaussian-weighted correlation function (HWHM ="+String.valueOf(width2)+") between the two curves : "+String.valueOf(norm);
+				//result="Correlation function between the two curves : "+String.valueOf(norm);
 				break;
 				
 		}

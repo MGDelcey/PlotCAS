@@ -1331,6 +1331,8 @@ public class Window extends JFrame {
 		private CurveSel selector1;
 		private CurveSel selector2;
 		private JComboBox<String> methodsel;
+		private JPanel l2;
+		private JTextField widthfield;
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
 			optiontitle.setText("Similarity analysis of 2 spectra");
@@ -1359,11 +1361,33 @@ public class Window extends JFrame {
   		    methodsel=new JComboBox<String>();
   		  	methodsel.addItem("Euclidian distance");
   		  	methodsel.addItem("Cosine angle");
+  		  	methodsel.addItem("Gaussian-weighted correlation function");
   		  	//methodsel.addItem("Integrated intensity");
   		  	//methodsel.addItem("Hybrid");
   		  	methodsel.setSelectedIndex(0);
   		  	l1.add(methodsel);
+  		  	
+  		  	methodsel.addActionListener(new ActionListener(){
+			      public void actionPerformed(ActionEvent event){				
+			    	  int imeth = methodsel.getSelectedIndex();
+			    	  if (imeth==2)
+			    	  {
+			    		  l2.setVisible(true);
+			    	  }
+			    	  else
+			    	  {
+			    		  l2.setVisible(false);
+			    	  }
+			}});
 			optionscreen.add(l1);
+			
+  		  	l2 = new JPanel();
+			l2.setLayout(new BoxLayout(l2, BoxLayout.LINE_AXIS));
+			l2.add(new JLabel("Gaussian width (HWHM):"));
+			widthfield  = new JTextField(String.valueOf(0.5));
+			l2.add(widthfield);
+			l2.setVisible(false);
+			optionscreen.add(l2);
 			
 			analysebutton=new JButton("Analyze");
 			analysebutton.addActionListener(new ActionListener(){
@@ -1371,10 +1395,11 @@ public class Window extends JFrame {
 					int curve1=selector1.index();
 					int curve2=selector2.index();
 					int imethod=methodsel.getSelectedIndex();
-					String result=Curveplot.similarity(plot,curve1,curve2,imethod);
+					float width=Float.parseFloat(widthfield.getText());
+					String result=Curveplot.similarity(plot,curve1,curve2,imethod,width);
 					JTextArea messagearea = new JTextArea(result);
 			    		JScrollPane scrollPane = new JScrollPane(messagearea);
-			    		scrollPane.setPreferredSize( new Dimension( 500, 20 ) );
+			    		scrollPane.setPreferredSize( new Dimension( 500, 40 ) );
 			    		JOptionPane.showMessageDialog(null, scrollPane, "Similarity", JOptionPane.PLAIN_MESSAGE); 
 				}
 			});

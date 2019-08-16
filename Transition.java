@@ -260,7 +260,7 @@ public class Transition {
 			e.printStackTrace();
 		}
 		
-		/* Find the first and last final states (they are energy ordered)*/
+		/* Find the first and last final states (sadly they are not necessarily energy ordered)*/
 		float e0=senergy[i1];
 		boolean first=true;
 		int ifirst=0,ilast=0;
@@ -282,7 +282,7 @@ public class Transition {
 		
 		float[][] plane = new float[xres+1][nfinal];
 		for (int i = 0; i < xres; i++) {for (int j = 0; j < nfinal; j++) {plane[i][j]=0;}}
-		for (int j = 0; j < nfinal; j++) {plane[xres][j]=Escale*(senergy[j]-e0);}
+		for (int j = 0; j < nfinal; j++) {plane[xres][j]=Escale*(senergy[ifirst+j]-e0);}
 		
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(molcas.getFile()));
