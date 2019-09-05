@@ -14,7 +14,7 @@ import javax.swing.JOptionPane;
 
 public class PlotCAS {
 	//public Window fen;
-	public static String currentversion="0.2.018";
+	public static String currentversion="0.2.019";
 	public static int nwindow=0;
 	
 	public static void main(String[] args) {

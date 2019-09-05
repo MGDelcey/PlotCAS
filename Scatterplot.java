@@ -312,17 +312,19 @@ public class Scatterplot extends JFrame {
 		    B2=broadvec(lorentzx2,imod,xresol);
 		    span=B.length;
 		    span2=B2.length;
+		    float sign=1;
+		    if (imod==0) sign=-1;
 	    		for (int i2 = 0; i2 < nfinal; i2++)
 	    		{
 	    			int i=(int) ((i1i2plane[xres][i2]-e1t)*yresol);
-	    			if (i>=yres) { break;}
+	    			if (i<0 || i>=yres) { continue;}
 	    			for (int j = 0; j < xres; j++) {tmpvec[j]=0;}
 	    			for (int j = 0; j < lorsplit; j++)
 	    			{
 	    				tmp=i1i2plane[j][i2];
 	    				for (int k = Math.max(0,j-span+1); k < j; k++)
 	    				{
-	    					tmpvec[k]+=tmp*B[j-k];
+	    					tmpvec[k]+=sign*tmp*B[j-k];
 	    				}
 	    				for (int k = j; k < Math.min(j+span, xres); k++)
 	    				{
@@ -334,7 +336,7 @@ public class Scatterplot extends JFrame {
 	    				tmp=i1i2plane[j][i2];
 	    				for (int k = Math.max(0,j-span2+1); k < j; k++)
 	    				{
-	    					tmpvec[k]+=tmp*B2[j-k];
+	    					tmpvec[k]+=sign*tmp*B2[j-k];
 	    				}
 	    				for (int k = j; k < Math.min(j+span2, xres); k++)
 	    				{
@@ -435,7 +437,96 @@ public class Scatterplot extends JFrame {
 				result[i][j]=tmpvec[j];
 			}
 		}
+		
+		
+		/* Weird code for diagonal broadening */
+		/* xy-axis Gaussian broadening */
+		/*int res1=yres, res2=xres;
+		if (xresol>yresol)
+		{
+			res1=xres;
+			res2=yres;
+			System.out.print("Bottom right first ");
+			System.out.print(res1);
+			System.out.print(" ");
+			System.out.print(res2);
+			System.out.print("\n");
+		}
+		else
+		{
+			System.out.print("Upper left first");
+			System.out.print(res1);
+			System.out.print(" ");
+			System.out.print(res2);
+			System.out.print("\n");
+		}
+		float xyresol=(float) (Math.max(xresol, yresol)*Math.sqrt(2));
+	   
+	    float slope=Math.min(xresol, yresol)/Math.max(xresol, yresol);
+	    int [] shift=new int[res1];
+	    for (int i2 = 0; i2 < res1; i2++) {shift[i2]=(int) (i2*slope);}
+	    
+	    B=broadvec(gauss,3,xyresol);
+	    span=B.length;*/
+	    /* Upper-left (or lower-right) triangle */
+		/*for (int i = 0; i < res1; i++)
+		{
+			if (i>0) { if (shift[i]==shift[i-1]) { continue;}}
+			for (int i2 = i; i2 < res1; i2++) {tmpvec[i2]=0;}
+			for (int i2 = i; i2 < res1; i2++)
+			{
+				int j=shift[i2]-shift[i];
+				if (j>=res2) { break;}
+				if (xresol>yresol) { tmp=result[i2][j];}
+				else { tmp=result[j][i2]; }
+				
+				for (int k = Math.max(i,i2-span+1); k < i2; k++)
+				{
+					tmpvec[k]+=tmp*B[i2-k];
+				}
+				for (int k = i2; k <= Math.min(i2+span-1, res1-1); k++)
+				{
+					tmpvec[k]+=tmp*B[k-i2];
+				}
+			}
+			for (int i2 = i; i2 < res1; i2++)
+			{
+				int j=shift[i2]-shift[i];
+				if (j>=res2) { break;}
+				if (xresol>yresol) { result[i2][j]=tmpvec[i2]; }
+				else {result[j][i2]=tmpvec[i2];  }
+			}
+		}*/
+		 /* Lower-right (or upper-left) triangle */
+		/*for (int j2 = 1; j2 < res2; j2++)
+		{
+			for (int i = 0; i < res1; i++) {tmpvec[i]=0;}
+			for (int i = 0; i < res1; i++)
+			{
+				int j=j2+shift[i];
+				if (j>=res2) { break;}
+				if (xresol>yresol) { tmp=result[i][j]; }
+				else { tmp=result[j][i]; }
+				
+				for (int k = Math.max(0,i-span+1); k < i; k++)
+				{
+					tmpvec[k]+=tmp*B[i-k];
+				}
+				for (int k = i; k <= Math.min(i+span-1, res1-1); k++)
+				{
+					tmpvec[k]+=tmp*B[k-i];
+				}
+			}
+			for (int i = 0; i < res1; i++)
+			{
+				int j=j2+shift[i];
+				if (j>=res2) { break;}
+				if (xresol>yresol) { result[i][j]=tmpvec[i]; }
+				else {result[j][i]=tmpvec[i];  }	
+			}
+		}*/
 	    //result=i1i2plane; //For testing purposes
+		
 		// Normalize
 		float max=0;
 		for(int i = 0; i < xres; i++)

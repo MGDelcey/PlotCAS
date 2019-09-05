@@ -1422,7 +1422,7 @@ public class Window extends JFrame {
 		private JTextField xresol;
 		private JTextField yresol;
 		private CurveSel selector;
-		private JRadioButton sqbefore, sqafter;
+		private JRadioButton sqbefore;
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
 			optiontitle.setText("2-D scattering plots");
