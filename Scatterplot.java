@@ -101,7 +101,10 @@ public class Scatterplot extends JFrame {
 	    yresol=yres/(e2t-e1t);
 	    
 	    lorsplit=xres;
-	    if (isdual) {lorsplit=Math.min((int) ((lorentzxE12-e1i)*xresol),xres);}
+	    if (isdual) {
+	    	   lorsplit=Math.min((int) ((lorentzxE12-e1i)*xresol),xres);
+	    	   lorsplit=Math.max(lorsplit, 0);
+	    }
 	    
 	    scatterplane=Broad2D(i1i2plane,xres,yres,e1i,e1t);
 	   
