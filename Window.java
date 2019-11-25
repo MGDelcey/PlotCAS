@@ -933,6 +933,7 @@ public class Window extends JFrame {
 	/* ******************************** */
 	
 	class PlotOptmenu implements ActionListener {
+		private JTextField wname;
 		private JTextField resolinp;
 		private JTextField E1inp;
 		private JTextField E2inp;
@@ -945,6 +946,13 @@ public class Window extends JFrame {
 			optiontitle.setText("General plotting options");
 			optionscreen.add(optiontitle);
 			
+			JPanel l0 = new JPanel();
+			l0.setLayout(new BoxLayout(l0, BoxLayout.LINE_AXIS));
+			l0.add(new JLabel("Name of the window:"));
+			wname=new JTextField();
+			l0.add(wname);
+			optionscreen.add(l0);
+
 			JPanel l1 = new JPanel();
 		    l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));
 			l1.add(new JLabel("Number of curve points:"));
@@ -1015,6 +1023,14 @@ public class Window extends JFrame {
 		}
 		class Optredraw implements ActionListener{
 			public void actionPerformed(ActionEvent arg0){
+				if (wname.getText().trim().isEmpty())
+				{
+					Window.this.setTitle("plotCAS");
+				}
+				else
+				{
+					Window.this.setTitle("plotCAS - "+wname.getText());
+				}
 				plot.resolution=Integer.parseInt(resolinp.getText());
 				float x1=Float.parseFloat(E1inp.getText());
 				float x2=Float.parseFloat(E2inp.getText());

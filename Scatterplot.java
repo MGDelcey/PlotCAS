@@ -57,7 +57,7 @@ public class Scatterplot extends JFrame {
 		/* ********************************* */
 		/* ******* Create the window ******* */
 		/* ********************************* */
-		this.setTitle("Scattering plot");
+		this.setTitle("Scattering plot for "+dcurve.getname());
 		this.setSize(800, 500);
 	    this.setLocationRelativeTo(null);
 	    this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
