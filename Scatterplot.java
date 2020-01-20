@@ -33,9 +33,9 @@ public class Scatterplot extends JFrame {
     Plotgraph plot;
     private float[][] i1i2plane;
     private float[][] scatterplane;
-    private float lorentzx,lorentzx2,lorentzxE12,lorentzy,gauss;
+    private float lorentzx,lorentzx2,lorentzxE12,lorentzy,gauss1,gauss2;
     private float xresol,yresol;
-    private JTextField lxfield,lxfield2,lxfield3, lyfield, gfield, extractfield;
+    private JTextField lxfield,lxfield2,lxfield3, lyfield, gfield1,gfield2, extractfield;
     private int xres, yres,lorsplit;
     private float e1i,e1t;
     private JComboBox<String> extractsel;
@@ -94,7 +94,8 @@ public class Scatterplot extends JFrame {
 	    lorentzxE12=curve.getbroad().getlorsplit();
 	    isdual=curve.getbroad().isduallorentz();
 	    lorentzy=0;// as a guess, no broadening
-	    gauss=curve.getbroad().getgaussw();
+	    gauss1=curve.getbroad().getgaussw();
+	    gauss2=gauss1;
 	    if (lorentzx==0) { lorentzx=(float) 0.1;}
 	    
 	    xresol=xres/(e2i-e1i);
@@ -147,10 +148,16 @@ public class Scatterplot extends JFrame {
 		optionscreen.add(l2);
 		
 	    JPanel l3 = new JPanel();
-		l3.add(new JLabel("Gaussian (HWHM):"));
-		gfield  = new JTextField(String.valueOf(gauss));
-		l3.add(gfield);
+		l3.add(new JLabel("Incident Gaussian (HWHM):"));
+		gfield1  = new JTextField(String.valueOf(gauss1));
+		l3.add(gfield1);
 		optionscreen.add(l3);
+		
+	    JPanel l4 = new JPanel();
+		l4.add(new JLabel("Transfer Gaussian (HWHM):"));
+		gfield2  = new JTextField(String.valueOf(gauss2));
+		l4.add(gfield2);
+		optionscreen.add(l4);
 		
 		JButton redrawbutton=new JButton("Redraw");
 		redrawbutton.addActionListener(new ActionListener() {
@@ -163,7 +170,8 @@ public class Scatterplot extends JFrame {
 					lorsplit=Math.min((int) ((lorentzxE12-e1i)*xresol),xres);
 				}
 				lorentzy=Float.parseFloat(lyfield.getText());
-				gauss=Float.parseFloat(gfield.getText());
+				gauss1=Float.parseFloat(gfield1.getText());
+				gauss2=Float.parseFloat(gfield2.getText());
 				scatterplane=Broad2D(i1i2plane,xres,yres,e1i,e1t);
 				plot.plotlist.set(0,scatterplane);
 				plot.repaint();
@@ -174,19 +182,19 @@ public class Scatterplot extends JFrame {
 		/* Extract 2D curves  */
 		optionscreen.add(new JLabel("Extract graph"));
 		
-		JPanel l4 = new JPanel();
+		JPanel l5 = new JPanel();
 		extractsel=new JComboBox<String>();
 		extractsel.addItem("Horizontal cut");
 		extractsel.addItem("Vertical cut");
 		extractsel.addItem("Vertical Integration");
-		l4.add(extractsel);
-		optionscreen.add(l4);
-		
-		JPanel l5 = new JPanel();
-		l5.add(new JLabel("Cut energy:"));
-		extractfield  = new JTextField("0.00");
-		l5.add(extractfield);
+		l5.add(extractsel);
 		optionscreen.add(l5);
+		
+		JPanel l6 = new JPanel();
+		l6.add(new JLabel("Cut energy:"));
+		extractfield  = new JTextField("0.00");
+		l6.add(extractfield);
+		optionscreen.add(l6);
 		
 		/* Extract cuts */
 		JButton extractbutton=new JButton("Extract");
@@ -275,6 +283,7 @@ public class Scatterplot extends JFrame {
 		    	  				e2=j/yresol+e1t;;
 		    	  				writer.write(String.format("%f", e1)+"   "+String.format("%f", e2)+"   "+String.format("%6.3e",scatterplane[i][j])+"\n");
 		    	  			}
+		    	  			writer.write("\n");
 		    	  		}
 			    	  	writer.close();
 		    	  	}
@@ -364,7 +373,7 @@ public class Scatterplot extends JFrame {
 		}
 	    
 		/* x-axis Gaussian broadening */
-	    B=broadvec(gauss,3,xresol);
+	    B=broadvec(gauss1,3,xresol);
 	    span=B.length;
 		for (int i = 0; i < yres; i++)
 		{
@@ -417,7 +426,7 @@ public class Scatterplot extends JFrame {
 		}
 		
 		/* y-axis Gaussian broadening */
-	    B=broadvec(gauss,3,yresol);
+	    B=broadvec(gauss2,3,yresol);
 	    span=B.length;
 	    
 		for (int i = 0; i < xres; i++)
