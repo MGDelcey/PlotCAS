@@ -10,6 +10,7 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.util.prefs.Preferences;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -42,6 +43,7 @@ public class Scatterplot extends JFrame {
     private Window fen;
     private Curve curve;
     private boolean isdual,isbefore;
+    //private Preferences prefs = Preferences.userRoot().node(this.getClass().getName());
     
 	public Scatterplot(Window dfen,Curve dcurve,float de1i,float e2i,float de1t,float e2t, int dxres,int dyres, boolean dbefore, int unit)
 	{

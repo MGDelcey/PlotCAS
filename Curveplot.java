@@ -110,6 +110,14 @@ public class Curveplot {
 				{
 					/* Lorentzian */
 					width=fen.curve.get(i-1).getbroad().getlorw1();
+					if (egap/(float)resolution>width)
+					{
+						JOptionPane.showMessageDialog(new JFrame(),
+						    "Graph resolution may be too low for the broadening used.\n"
+						    + " increase the number of curve points.",
+						    "Inane warning",
+						    JOptionPane.WARNING_MESSAGE);
+					}
 					float lorsplit=fen.curve.get(i-1).getbroad().getlorsplit();
 					double width2=fen.curve.get(i-1).getbroad().getlorw2();
 					fact=1/(Math.PI);

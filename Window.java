@@ -126,8 +126,7 @@ public class Window extends JFrame {
 	    JMenu plotoptions = new JMenu("Plotting");
 	    optcurve = new JMenuItem("Curve options");
 	    optplot = new JMenuItem("General settings");
-	    JMenuItem defaultmenu = new JMenuItem("Save settings");
-	    JMenuItem loaddefaultmenu = new JMenuItem("Load settings");
+	    JMenuItem defaultmenu = new JMenuItem("Manage broadenings");
 	    optcurve.addActionListener(new PlotCurvemenu());
 	    optcurve.setEnabled(false);
 	    plotoptions.add(optcurve);
@@ -136,8 +135,6 @@ public class Window extends JFrame {
 	    plotoptions.add(optplot);
 	    defaultmenu.addActionListener(new defaultmenu());
 	    plotoptions.add(defaultmenu);
-	    loaddefaultmenu.addActionListener(new loaddefaultmenu());
-	    plotoptions.add(loaddefaultmenu);
 	    menuBar.add(plotoptions);
 	    
 	    analysis = new JMenu("Analysis");
@@ -696,6 +693,8 @@ public class Window extends JFrame {
 		private JPanel l9;
 		private JButton deletebutton;
 		private JRadioButton HWHM, Gsigma;
+		private String[] preflist;
+		private Broadening broad;
 		
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
@@ -760,6 +759,7 @@ public class Window extends JFrame {
 			l4.add(colorfield);
 			optionscreen.add(l4);
 			
+			broad=curve.get(icurve).getbroad();
 			/* Broadening menu */
 			if (curve.get(icurve).gettype()<=2)
 			{
@@ -771,6 +771,11 @@ public class Window extends JFrame {
 				broadsel.addItem("Gaussian broadening");
 				broadsel.addItem("Gaussian + Lorentzian broadening");
 				broadsel.addItem("Gaussian + dual Lorentzian broadening");
+				preflist=curDefault.get_preflist();
+				for(int i = 0; i < preflist.length; i++)
+				{
+					broadsel.addItem(preflist[i]);
+				}
 				l5.add(broadsel);
 				optionscreen.add(l5);
 				int ibroad=curve.get(icurve).getbroad().getbroadtype();
@@ -779,6 +784,17 @@ public class Window extends JFrame {
 				broadsel.addActionListener(new ActionListener(){
 				      public void actionPerformed(ActionEvent event){				
 				    	  int ibroad = broadsel.getSelectedIndex();
+				    	  if (ibroad>=3)
+				    	  {
+				    		  curDefault.readdefaults(preflist[ibroad-3]);
+				  		  broad=curDefault.get_dbroad();
+				    		  ibroad=broad.getbroadtype();
+				    		  gausswfield.setText(String.valueOf(broad.getgaussw()));
+				    		  lorentzfield.setText(String.valueOf(broad.getlorw1()));
+				    		  lorentz2field.setText(String.valueOf(broad.getlorw2()));
+				    		  lorentzsplitfield.setText(String.valueOf(broad.getlorsplit()));
+				    		  broadsel.setSelectedIndex(ibroad);
+				    	  }
 				    	  switch (ibroad)
 				    	  {
 				    	  case 0:
@@ -796,15 +812,15 @@ public class Window extends JFrame {
 				    		  l8.setVisible(true);
 				    		  l9.setVisible(true);
 				    		  break;
-				    	  }
 				      }
+				   }
 				});
 				
 				
 				JPanel l6 = new JPanel();
 				l6.setLayout(new BoxLayout(l6, BoxLayout.LINE_AXIS));
 				l6.add(new JLabel("Gaussian width:"));
-				gausswfield = new JTextField(String.valueOf(curve.get(icurve).getbroad().getgaussw()));
+				gausswfield = new JTextField(String.valueOf(broad.getgaussw()));
 				l6.add(gausswfield);
 				ButtonGroup GunitGroup = new ButtonGroup();
 				HWHM = new JRadioButton("HWHM");
@@ -820,7 +836,7 @@ public class Window extends JFrame {
 				l7 = new JPanel();
 				l7.setLayout(new BoxLayout(l7, BoxLayout.LINE_AXIS));
 				l7.add(new JLabel("Lorentzian width (HWHM):"));
-				lorentzfield  = new JTextField(String.valueOf(curve.get(icurve).getbroad().getlorw1()));
+				lorentzfield  = new JTextField(String.valueOf(broad.getlorw1()));
 				l7.add(lorentzfield);
 				if (ibroad<1) {l7.setVisible(false);}
 				optionscreen.add(l7);
@@ -828,7 +844,7 @@ public class Window extends JFrame {
 				l8 = new JPanel();
 				l8.setLayout(new BoxLayout(l8, BoxLayout.LINE_AXIS));
 				l8.add(new JLabel("Second lorentzian width:"));
-				lorentz2field = new JTextField(String.valueOf(curve.get(icurve).getbroad().getlorw2()));
+				lorentz2field = new JTextField(String.valueOf(broad.getlorw2()));
 				l8.add(lorentz2field);
 				if (ibroad<2) {l8.setVisible(false);}
 				optionscreen.add(l8);
@@ -836,7 +852,7 @@ public class Window extends JFrame {
 				l9 = new JPanel();
 				l9.setLayout(new BoxLayout(l9, BoxLayout.LINE_AXIS));
 				l9.add(new JLabel("Lorentzian split energy"));
-				lorentzsplitfield = new JTextField(String.valueOf(curve.get(icurve).getbroad().getlorsplit()));
+				lorentzsplitfield = new JTextField(String.valueOf(broad.getlorsplit()));
 				l9.add(lorentzsplitfield);
 				optionscreen.add(l9);
 				if (ibroad<2) {l9.setVisible(false);}
@@ -1680,163 +1696,26 @@ public class Window extends JFrame {
 	/* ************************************************************ */
 	/* ************************************************************ */
 	
-	/* ******************************** */
-	/* *******   Set settings   ******* */
-	/* ******************************** */
 	
 	class defaultmenu implements ActionListener {
-		private JTextField resolinp,gausswfield, lorentzfield, lorentz2field, lorentzsplitfield,preflabel;
-		private JComboBox<String> unitsel,broadsel,prefsel;
-		private JPanel l7,l8,l9;
+		private JTextField preflabel;
+		private String[] preflist;
+		JComboBox<String> prefsel;
 		
 		public void actionPerformed(ActionEvent arg0){
 			optionscreen.removeAll();
-			optiontitle.setText("Save settings");
+			optiontitle.setText("Manage settings");
 			optionscreen.add(optiontitle);	
 			
-			JPanel l1 = new JPanel();
-		    l1.setLayout(new BoxLayout(l1, BoxLayout.LINE_AXIS));
-			l1.add(new JLabel("Number of curve points:"));
-			resolinp=new JTextField(String.valueOf(plot.resolution));
-			l1.add(resolinp);
-			optionscreen.add(l1);
-			
-  		  	JPanel l4 = new JPanel();
-  		  	int iunit = plot.getunit();
-  		  	l4.setLayout(new BoxLayout(l4, BoxLayout.LINE_AXIS));
-  		  	l4.add(new JLabel("Unit:"));
-  		  	unitsel=new JComboBox<String>();
-  		  	unitsel.addItem("hartree");
-  		  	unitsel.addItem("eV");
-  		  	unitsel.addItem("kcal/mol");
-  		  	unitsel.addItem("kJ/mol");
-  		  	unitsel.addItem("cm-1");
-  		  	//unitsel.addItem("nm");
-  		  	unitsel.setSelectedIndex(iunit);
-  		  	l4.add(unitsel);
-  		  	optionscreen.add(l4);
-  		  	
-			JPanel l5 = new JPanel();
-			l5.add(new JLabel("Broadening type"));
-			broadsel=new JComboBox<String>();
-			broadsel.addItem("Gaussian broadening");
-			broadsel.addItem("Gaussian + Lorentzian broadening");
-			broadsel.addItem("Gaussian + dual Lorentzian broadening");
-			l5.add(broadsel);
-			optionscreen.add(l5);
-			int ibroad=curDefault.get_dbroad().getbroadtype();
-			broadsel.setSelectedIndex(ibroad);
-			
-			broadsel.addActionListener(new ActionListener(){
-			      public void actionPerformed(ActionEvent event){				
-			    	  int ibroad = broadsel.getSelectedIndex();
-			    	  switch (ibroad)
-			    	  {
-			    	  case 0:
-			    		  l7.setVisible(false);
-			    		  l8.setVisible(false);
-			    		  l9.setVisible(false);
-			    		  break;
-			    	  case 1:
-			    		  l7.setVisible(true);
-			    		  l8.setVisible(false);
-			    		  l9.setVisible(false);
-			    		  break;
-			    	  case 2:
-			    		  l7.setVisible(true);
-			    		  l8.setVisible(true);
-			    		  l9.setVisible(true);
-			    		  break;
-			    	  }
-			      }
-			});
-			
-			
-			JPanel l6 = new JPanel();
-			l6.setLayout(new BoxLayout(l6, BoxLayout.LINE_AXIS));
-			l6.add(new JLabel("Gaussian width (HWHM):"));
-			gausswfield = new JTextField(String.valueOf(curDefault.get_dbroad().getgaussw()));
-			l6.add(gausswfield);
-			optionscreen.add(l6);
-			
-			l7 = new JPanel();
-			l7.setLayout(new BoxLayout(l7, BoxLayout.LINE_AXIS));
-			l7.add(new JLabel("Lorentzian width (HWHM):"));
-			lorentzfield  = new JTextField(String.valueOf(curDefault.get_dbroad().getlorw1()));
-			l7.add(lorentzfield);
-			if (ibroad<1) {l7.setVisible(false);}
-			optionscreen.add(l7);
 
-			l8 = new JPanel();
-			l8.setLayout(new BoxLayout(l8, BoxLayout.LINE_AXIS));
-			l8.add(new JLabel("Second lorentzian width:"));
-			lorentz2field = new JTextField(String.valueOf(curDefault.get_dbroad().getlorw2()));
-			l8.add(lorentz2field);
-			if (ibroad<2) {l8.setVisible(false);}
-			optionscreen.add(l8);
-				
-			l9 = new JPanel();
-			l9.setLayout(new BoxLayout(l9, BoxLayout.LINE_AXIS));
-			l9.add(new JLabel("Lorentzian split energy"));
-			lorentzsplitfield = new JTextField(String.valueOf(curDefault.get_dbroad().getlorsplit()));
-			l9.add(lorentzsplitfield);
-			optionscreen.add(l9);
-			if (ibroad<2) {l9.setVisible(false);}
-			
-			JPanel l0 = new JPanel();
-			prefsel=new JComboBox<String>();
-			String[] preflist=curDefault.get_preflist();
-			for(int i = 0; i < preflist.length; i++)
-			{
-				if (!preflist[i].equals("Default"))
-				{
-					prefsel.addItem(preflist[i]);
-				}
-			}
-			prefsel.addItem("create new");
-			prefsel.setSelectedItem("create new");
-			l0.add(prefsel);
+			JPanel l1 = new JPanel();
 			preflabel=new JTextField("Setting name");
-			preflabel.setVisible(true);
-			l0.add(preflabel);
-			
-			prefsel.addActionListener(new ActionListener()
-			{
-				public void actionPerformed(ActionEvent ae) {
-					if (prefsel.getSelectedItem().equals("create new"))
-					{
-						preflabel.setText("Setting name");
-						preflabel.setVisible(true);
-					}
-					else
-					{
-						preflabel.setText(String.valueOf(prefsel.getSelectedItem()));
-						preflabel.setVisible(false);
-					}
-				}
-			});
-			optionscreen.add(l0);
+			l1.add(preflabel);
 			
 			
 			JButton savebutton = new JButton("Save setting");
 			savebutton.addActionListener(new ActionListener() {
 			      public void actionPerformed(ActionEvent ae) {
-			    	  Broadening broad=new Broadening();
-			    	  switch (broadsel.getSelectedIndex())
-			    	  {
-			    	  case 0:
-			    		  broad.set_Broadening(Float.parseFloat(gausswfield.getText()));
-			    		  break;
-			    	  case 1:
-			    		  broad.set_Broadening(Float.parseFloat(gausswfield.getText()),Float.parseFloat(lorentzfield.getText()));
-			    		  break;
-			    	  case 2:
-			    		  broad.set_Broadening(Float.parseFloat(gausswfield.getText()),Float.parseFloat(lorentzfield.getText()),Float.parseFloat(lorentzsplitfield.getText()),Float.parseFloat(lorentz2field.getText()));
-			    		  break;
-			    	  }
-			    	  curDefault.set_dbroad(broad);
-			    	  
-			    	  curDefault.set_graphopts(Integer.parseInt(resolinp.getText()),unitsel.getSelectedIndex());
 
 			    	  String label=preflabel.getText();
 			    	  boolean confirm=true;
@@ -1850,52 +1729,38 @@ public class Window extends JFrame {
 			    	  }
 			      }
 			});
-			optionscreen.add(savebutton);
+			l1.add(savebutton);
+			optionscreen.add(l1);
 			
-			optionscreen.revalidate();
-		    optionscreen.repaint();
-		}
-	}
-	
-	/* ******************************** */
-	/* *******   Load settings  ******* */
-	/* ******************************** */
-	
-	class loaddefaultmenu implements ActionListener {
-		JComboBox<String> prefsel;
-		public void actionPerformed(ActionEvent arg0){
-			optionscreen.removeAll();
-			optiontitle.setText("Load settings");
-			optionscreen.add(optiontitle);
-			
-			JPanel l0 = new JPanel();
+			JPanel l3 = new JPanel();
 			prefsel=new JComboBox<String>();
-			String[] preflist=curDefault.get_preflist();
+			preflist=curDefault.get_preflist();
 			for(int i = 0; i < preflist.length; i++)
 			{
-				if (!preflist[i].equals("Default"))
-				{
-					prefsel.addItem(preflist[i]);
-				}
+				prefsel.addItem(preflist[i]);
 			}
-			l0.add(prefsel);
-			optionscreen.add(l0);
+			l3.add(prefsel);
 			
-			JButton loadbutton = new JButton("Load");
-			optionscreen.add(loadbutton);
-			loadbutton.addActionListener(new ActionListener()
-			{
-				public void actionPerformed(ActionEvent arg0)
-				{
-					curDefault.readdefaults(String.valueOf(prefsel.getSelectedItem()));
-					plot.reset();
-					for (int i = 0; i <= Window.this.ncurve; i++)
-					{
-						new Curveplot(Window.this,i);
-					}
-					if (Window.this.ncurve>0){plot.repaint();}
-				}
+			JButton deletebutton = new JButton("Delete setting");
+			deletebutton.addActionListener(new ActionListener() {
+			      public void actionPerformed(ActionEvent ae) {
+
+			    	  int ipref = prefsel.getSelectedIndex();
+			    	  String label=preflist[ipref];
+			    	  boolean confirm=true;
+			    	  if (curDefault.labelexists(label))
+			    	  {
+			    		  confirm=(JOptionPane.showOptionDialog(null, "Do you really want to delete this setting?", "Overwrite Confirmation", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null)==0);
+			    	  }
+			    	  if (confirm)
+			    	  {
+			    		  curDefault.remove_default(label); 
+			    	  }
+			    	  emptymenu();
+			      }
 			});
+			l3.add(deletebutton);
+			optionscreen.add(l3);
 			
 			optionscreen.revalidate();
 		    optionscreen.repaint();

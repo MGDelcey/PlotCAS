@@ -27,6 +27,10 @@ public class Default{
 		defaultvalue=ddir+"\n"+dbroad.filestring()+"\n"+resolution+" "+iunit+" "+E1+" "+dE+" "+A1+" "+dA;
 		prefs.put(pname,defaultvalue);
 	}
+	public void remove_default(String pname)
+	{
+		prefs.remove(pname);
+	}
 	public void readdefaults(String pname)
 	{
 		if (prefs.get(pname, null)!=null)
@@ -65,9 +69,19 @@ public class Default{
 	}
 	public String[] get_preflist()
 	{ 
-		String[] list;
+		String[] list,list2;
 		try{
-			list = prefs.keys();
+			list2 = prefs.keys();
+			list = new String[list2.length-1];
+			int j=0;
+			for(int i = 0; i < list2.length; i++)
+			{
+				if (!list2[i].equals("Default"))
+				{
+					list[j]=list2[i];
+					j++;
+				}
+			}
 			}
 		catch (BackingStoreException ex) {
             System.out.println(ex);
