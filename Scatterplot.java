@@ -10,7 +10,6 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.util.prefs.Preferences;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -43,7 +42,7 @@ public class Scatterplot extends JFrame {
     private Window fen;
     private Curve curve;
     private boolean isdual,isbefore;
-    //private Preferences prefs = Preferences.userRoot().node(this.getClass().getName());
+    private File dir;
     
 	public Scatterplot(Window dfen,Curve dcurve,float de1i,float e2i,float de1t,float e2t, int dxres,int dyres, boolean dbefore, int unit)
 	{
@@ -56,6 +55,7 @@ public class Scatterplot extends JFrame {
 		fen=dfen;
 		curve=dcurve;
 		isbefore=dbefore;
+		dir=fen.curDefault.get_dfile();
 		/* ********************************* */
 		/* ******* Create the window ******* */
 		/* ********************************* */
@@ -170,6 +170,7 @@ public class Scatterplot extends JFrame {
 					lorentzx2=Float.parseFloat(lxfield2.getText());
 					lorentzxE12=Float.parseFloat(lxfield3.getText());
 					lorsplit=Math.min((int) ((lorentzxE12-e1i)*xresol),xres);
+					lorsplit=Math.max(lorsplit, 0);
 				}
 				lorentzy=Float.parseFloat(lyfield.getText());
 				gauss1=Float.parseFloat(gfield1.getText());
@@ -274,6 +275,7 @@ public class Scatterplot extends JFrame {
 			  try {
 				String filename = JOptionPane.showInputDialog("Name this file");
 				JFileChooser fcPick = new JFileChooser();
+				fcPick.setCurrentDirectory(dir);
 				fcPick.setSelectedFile(new File(filename));
 				int sf = fcPick.showSaveDialog(null);
 		        if(sf == JFileChooser.APPROVE_OPTION){
@@ -542,7 +544,7 @@ public class Scatterplot extends JFrame {
 	    //result=i1i2plane; //For testing purposes
 		
 		// Normalize
-		float max=0;
+/*		float max=0;
 		for(int i = 0; i < xres; i++)
 		{
 			for(int j = 0; j < yres; j++)
@@ -556,7 +558,7 @@ public class Scatterplot extends JFrame {
 			{
 				result[i][j]=result[i][j]/max;
 			}
-		}
+		}*/
 		//
 		return result;
 	}
