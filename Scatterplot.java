@@ -43,6 +43,9 @@ public class Scatterplot extends JFrame {
     private Curve curve;
     private boolean isdual,isbefore;
     private File dir;
+    private float maxvalue;
+    private int xmax,ymax;
+    private JPanel l0, l0_2;
     
 	public Scatterplot(Window dfen,Curve dcurve,float de1i,float e2i,float de1t,float e2t, int dxres,int dyres, boolean dbefore, int unit)
 	{
@@ -121,6 +124,15 @@ public class Scatterplot extends JFrame {
 		/* ******************************** */
 	    /* Broadenings  */
 
+	    float e1=e1i+xmax/xresol;
+	    float e2=e1t+ymax/yresol;
+	    l0 = new JPanel();
+	    l0.add(new JLabel("Spectrum maximum before normalizing: "+String.valueOf(maxvalue)));
+	    optionscreen.add(l0);
+	    l0_2 = new JPanel();
+	    l0_2.add(new JLabel("at energies: "+String.valueOf(e1)+" - "+String.valueOf(e2)));
+	    optionscreen.add(l0_2);
+	    
 	    optionscreen.add(new JLabel("Broadenings"));
 	    JPanel l1 = new JPanel();
 		l1.add(new JLabel("Incident Lorentzian (HWHM):"));
@@ -178,6 +190,16 @@ public class Scatterplot extends JFrame {
 				scatterplane=Broad2D(i1i2plane,xres,yres,e1i,e1t);
 				plot.plotlist.set(0,scatterplane);
 				plot.repaint();
+				
+			    float e1=e1i+xmax/xresol;
+			    float e2=e1t+ymax/yresol;
+			    System.out.print(maxvalue);
+			    l0.removeAll();
+			    l0_2.removeAll();
+			    l0.add(new JLabel("Spectrum maximum before normalizing: "+String.valueOf(maxvalue)));
+			    l0_2.add(new JLabel("at energies: "+String.valueOf(e1)+" - "+String.valueOf(e2)));
+			    optionscreen.revalidate();
+			    optionscreen.repaint();
 			}
 		});
 		optionscreen.add(redrawbutton);
@@ -544,21 +566,26 @@ public class Scatterplot extends JFrame {
 	    //result=i1i2plane; //For testing purposes
 		
 		// Normalize
-/*		float max=0;
+		maxvalue=0;
 		for(int i = 0; i < xres; i++)
 		{
 			for(int j = 0; j < yres; j++)
 			{
-				max=Math.max(result[i][j],max);
+				if (result[i][j]>maxvalue)
+				{
+					maxvalue=result[i][j];
+					xmax=i;
+					ymax=j;
+				}
 			}
 		}
 		for(int i = 0; i < xres; i++)
 		{
 			for(int j = 0; j < yres; j++)
 			{
-				result[i][j]=result[i][j]/max;
+				result[i][j]=result[i][j]/maxvalue;
 			}
-		}*/
+		}
 		//
 		return result;
 	}
