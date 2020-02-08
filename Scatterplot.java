@@ -307,7 +307,7 @@ public class Scatterplot extends JFrame {
 		    	  			e1=i/xresol+e1i;;
 		    	  			for (int j=0; j<yres; j++) {
 		    	  				e2=j/yresol+e1t;;
-		    	  				writer.write(String.format("%f", e1)+"   "+String.format("%f", e2)+"   "+String.format("%6.3e",scatterplane[i][j])+"\n");
+		    	  				writer.write(String.format("%f", e1)+"   "+String.format("%f", e2)+"   "+String.format("%9.6e",scatterplane[i][j])+"\n");
 		    	  			}
 		    	  			writer.write("\n");
 		    	  		}
