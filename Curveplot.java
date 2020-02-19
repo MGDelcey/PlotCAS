@@ -112,11 +112,16 @@ public class Curveplot {
 					width=fen.curve.get(i-1).getbroad().getlorw1();
 					if (egap/(float)resolution>width)
 					{
-						JOptionPane.showMessageDialog(new JFrame(),
-						    "Graph resolution may be too low for the broadening used.\n"
-						    + " increase the number of curve points.",
-						    "Inane warning",
-						    JOptionPane.WARNING_MESSAGE);
+						  Thread t = new Thread(new Runnable(){
+						        public void run(){
+									JOptionPane.showMessageDialog(new JFrame(),
+										    "Graph resolution may be too low for the broadening used.\n"
+										    + " increase the number of curve points.",
+										    "Warning",
+										    JOptionPane.WARNING_MESSAGE);
+						        }
+						    });
+						  t.start();
 					}
 					float lorsplit=fen.curve.get(i-1).getbroad().getlorsplit();
 					double width2=fen.curve.get(i-1).getbroad().getlorw2();
