@@ -1359,7 +1359,7 @@ public class Window extends JFrame {
 	/* ******* Similarity analysis ******* */
 	/* ******************************** */
 	class Similarity implements ActionListener {
-		JButton analysebutton;
+		JButton analysebutton, alignbutton;
 		private CurveSel selector1;
 		private CurveSel selector2;
 		private JComboBox<String> methodsel;
@@ -1421,6 +1421,22 @@ public class Window extends JFrame {
 			l2.setVisible(false);
 			optionscreen.add(l2);
 			
+			alignbutton=new JButton("Align");
+			alignbutton.addActionListener(new ActionListener(){
+				public void actionPerformed(ActionEvent event){
+					int curve1=selector1.index();
+					int curve2=selector2.index();
+					int imethod=methodsel.getSelectedIndex();
+					float width=Float.parseFloat(widthfield.getText());
+					int align=1;
+					String result=Curveplot.similarity(plot,curve1,curve2,imethod,width,align);
+					curve.get(curve2).setxoffset(curve.get(curve2).getxoffset()+Float.parseFloat(result));
+					new Curveplot(Window.this,curve2+1);
+					plot.repaint();
+				}
+			});
+			optionscreen.add(alignbutton);
+			
 			analysebutton=new JButton("Analyze");
 			analysebutton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent event){
@@ -1428,7 +1444,8 @@ public class Window extends JFrame {
 					int curve2=selector2.index();
 					int imethod=methodsel.getSelectedIndex();
 					float width=Float.parseFloat(widthfield.getText());
-					String result=Curveplot.similarity(plot,curve1,curve2,imethod,width);
+					int align=0;
+					String result=Curveplot.similarity(plot,curve1,curve2,imethod,width,align);
 					JTextArea messagearea = new JTextArea(result);
 			    		JScrollPane scrollPane = new JScrollPane(messagearea);
 			    		scrollPane.setPreferredSize( new Dimension( 500, 40 ) );

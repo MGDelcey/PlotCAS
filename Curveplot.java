@@ -372,69 +372,122 @@ public class Curveplot {
 		}
 		return position;
 	}
-	public static String similarity(Plotgraph plot,int i1,int i2,int imethod,float width){
+	public static String similarity(Plotgraph plot,int i1,int i2,int imethod,float width, int align){
 		int resolution=plot.resolution;
 		//float estart=plot.getx1();
 		float egap=plot.getxde();
 		String result="";
 		//double resol=(double) egap/(double) resolution;
 		double norm=0, norm1=0, norm2=0;
-		switch (imethod)
+		int epos2;
+		int shift=0; int center=0; int gap;
+		double [][] matrix = new double [3][3]; 
+		double [] array = new double [3];
+		gap=resolution/10;
+		for (int iter = 0; iter <= 10*align ; iter++ )
 		{
-			case 0: // Euclidian similarity
-				for (int epos = 0; epos < resolution; epos++)
+			for (int ishift = -align; ishift <= align ; ishift++ )
+			{
+				shift=center+ishift*gap;
+				matrix[ishift+1][2]=1;
+				matrix[ishift+1][1]=shift;
+				matrix[ishift+1][0]=shift*shift;
+				switch (imethod)
 				{
-					norm+=Math.pow((double) plot.plotlist.get(i1+1)[epos][0]-plot.plotlist.get(i2+1)[epos][0],2);
-				}
-				norm=Math.sqrt(norm/(double) resolution)*(double) egap;
-				result="Euclidian distance between the two curves : "+String.valueOf(norm);
-				break;
-			case 1: // Cosine similarity
-				double product=0;
-				for (int epos = 0; epos < resolution; epos++)
-				{
-					product+=plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i2+1)[epos][0];
-					norm1+=plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i1+1)[epos][0];
-					norm2+=plot.plotlist.get(i2+1)[epos][0]*plot.plotlist.get(i2+1)[epos][0];
-				}
-				product=product/Math.sqrt(norm1)/Math.sqrt(norm2);
-				result="Cosine similarity between the two curves : "+String.valueOf(product);
-				break;
-			case 2: // Gaussian-weighted correlation function
-				egap=egap/(float)resolution;
-				float width2=width;
-				width=(float) (width/Math.sqrt(2.0*Math.log(2)));
-				float w2=width*width;
-				double tol=0.01;
-				float span=(float) Math.sqrt(-Math.log(tol)*2*w2);
-				int ispan=(int) (span/egap);
-				for (int wpos = -ispan; wpos <= ispan; wpos++)
-				{
-					double tmp=0, tmp1=0, tmp2=0;
-					float de2=wpos*egap;
-					de2=de2*de2;
-					float fact=1;
-					if (w2>0.0001)
-					{
-						fact=(float) Math.exp(-de2/(2*w2));
-					}	// If width is 0, span is 0, so only one point of weight 1.
+					case 0: // Euclidian similarity
+						norm=0;
+						for (int epos = 0; epos < resolution; epos++)
+						{
+							epos2=Math.max(Math.min(epos-shift,resolution-1),0);
+							norm+=Math.pow((double) plot.plotlist.get(i1+1)[epos][0]-plot.plotlist.get(i2+1)[epos2][0],2);
+						}
+						norm=Math.sqrt(norm/(double) resolution)*(double) egap;
+						array[ishift+1]=-norm;
+						result="Euclidian distance between the two curves : "+String.valueOf(norm);
+						break;
+					case 1: // Cosine similarity
+						double product=0;
+						norm1=0; norm2=0;
+						for (int epos = 0; epos < resolution; epos++)
+						{
+							epos2=Math.max(Math.min(epos-shift,resolution-1),0);
+							product+=plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i2+1)[epos2][0];
+							norm1+=plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i1+1)[epos][0];
+							norm2+=plot.plotlist.get(i2+1)[epos2][0]*plot.plotlist.get(i2+1)[epos2][0];
+						}
+						product=product/Math.sqrt(norm1)/Math.sqrt(norm2);
+						array[ishift+1]=product;
+						result="Cosine similarity between the two curves : "+String.valueOf(product);
+						break;
+					case 2: // Gaussian-weighted correlation function
+						float egap2=egap/(float)resolution;
+						float width2=(float) (width/Math.sqrt(2.0*Math.log(2)));
+						float w2=width2*width2;
+						double tol=0.01;
+						float span=(float) Math.sqrt(-Math.log(tol)*2*w2);
+						int ispan=(int) (span/egap2);
+						norm=0;
+						norm1=0; norm2=0;
+						for (int wpos = -ispan; wpos <= ispan; wpos++)
+						{
+							double tmp=0, tmp1=0, tmp2=0;
+							float de2=wpos*egap2;
+							de2=de2*de2;
+							float fact=1;
+							if (w2>0.0001)
+							{
+								fact=(float) Math.exp(-de2/(2*w2));
+							}	// If width is 0, span is 0, so only one point of weight 1.
 					
-					for (int epos = Math.max(-wpos, 0); epos < Math.min(resolution-wpos, resolution); epos++)
-					{
-						tmp+=Math.pow((double) plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i2+1)[epos+wpos][0],2);
-						tmp1+=Math.pow((double) plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i1+1)[epos+wpos][0],2);
-						tmp2+=Math.pow((double) plot.plotlist.get(i2+1)[epos][0]*plot.plotlist.get(i2+1)[epos+wpos][0],2);
-					}
-					norm=norm+tmp*fact;
-					norm1=norm1+tmp1*fact;
-					norm2=norm2+tmp2*fact;
+							for (int epos = Math.max(-wpos, 0); epos < Math.min(resolution-wpos, resolution); epos++)
+							{
+								epos2=Math.max(Math.min(epos-shift,Math.min(resolution-wpos, resolution)-1),Math.max(-wpos, 0));
+								tmp+=Math.pow((double) plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i2+1)[epos2+wpos][0],2);
+								tmp1+=Math.pow((double) plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i1+1)[epos+wpos][0],2);
+								tmp2+=Math.pow((double) plot.plotlist.get(i2+1)[epos2][0]*plot.plotlist.get(i2+1)[epos2+wpos][0],2);
+							}
+							norm=norm+tmp*fact;
+							norm1=norm1+tmp1*fact;
+							norm2=norm2+tmp2*fact;
+						}
+						norm=norm/Math.sqrt(norm1*norm2);
+						array[ishift+1]=norm;
+						result="Gaussian-weighted correlation function (HWHM ="+String.valueOf(width)+")\n between the two curves : "+String.valueOf(norm);
+						//result="Correlation function between the two curves : "+String.valueOf(norm);
+						break;
 				}
-				norm=norm/Math.sqrt(norm1*norm2);
-				result="Gaussian-weighted correlation function (HWHM ="+String.valueOf(width2)+") between the two curves : "+String.valueOf(norm);
-				//result="Correlation function between the two curves : "+String.valueOf(norm);
-				break;
-				
-		}
+			}/* shift loop */
+			if (align>0)
+			{
+				double[] x=lsolve(matrix,array);
+				if (x[0]<0)
+				{
+					double tmp=-x[1]/(2*x[0])-center;
+					if (Math.abs(tmp)<gap)
+					{
+						center+=(int) Math.round(tmp);
+						gap=gap/3;
+					}
+					else
+					{
+						center+=((int) Math.signum(tmp))*gap;
+					}
+				}
+				else
+				{
+					double gradient=(array[2]-array[0]);
+					center+=((int) Math.signum(gradient))*gap;
+				}
+				float resol=egap/(float) resolution;
+				float position=center*resol;
+				result=String.valueOf(position);
+				if (gap<1) 
+				{
+					break;
+				}
+			}
+			
+		}/* Iter loop */
 		return result;
 	}
 	/* *********************************** */
@@ -464,5 +517,43 @@ public class Curveplot {
 				*/
 		}
 		return unitfactor;
+	}
+	public static double[] lsolve(double[][] A, double[] b) {
+		int n = b.length;
+	    double EPSILON = 1e-10;
+	    for (int p = 0; p < n; p++) {
+	    		// find pivot row and swap
+	    		int max = p;
+	        for (int i = p + 1; i < n; i++) {
+	        		if (Math.abs(A[i][p]) > Math.abs(A[max][p])) {
+	        			max = i;
+	             }
+	        }
+	        double[] temp = A[p]; A[p] = A[max]; A[max] = temp;
+	        double   t    = b[p]; b[p] = b[max]; b[max] = t;
+	        // singular or nearly singular
+	        if (Math.abs(A[p][p]) <= EPSILON) {
+	        		throw new ArithmeticException("Matrix is singular or nearly singular");
+	         }
+
+	         // pivot within A and b
+	         for (int i = p + 1; i < n; i++) {
+	        	 	double alpha = A[i][p] / A[p][p];
+	            b[i] -= alpha * b[p];
+	            for (int j = p; j < n; j++) {
+	            		A[i][j] -= alpha * A[p][j];
+	            }
+	        }
+	    }
+	    // back substitution
+	    double[] x = new double[n];
+	    for (int i = n - 1; i >= 0; i--) {
+	    		double sum = 0.0;
+	        for (int j = i + 1; j < n; j++) {
+	        		sum += A[i][j] * x[j];
+	        }
+	        x[i] = (b[i] - sum) / A[i][i];
+	    }
+	    return x;
 	}
 }
