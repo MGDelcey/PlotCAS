@@ -415,7 +415,8 @@ public class Curveplot {
 							norm1+=plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i1+1)[epos][0];
 							norm2+=plot.plotlist.get(i2+1)[epos2][0]*plot.plotlist.get(i2+1)[epos2][0];
 						}
-						product=product/Math.sqrt(norm1)/Math.sqrt(norm2);
+
+						product=product/Math.sqrt(norm1*norm2);
 						array[ishift+1]=product;
 						result="Cosine similarity between the two curves : "+String.valueOf(product);
 						break;
@@ -442,9 +443,9 @@ public class Curveplot {
 							for (int epos = Math.max(-wpos, 0); epos < Math.min(resolution-wpos, resolution); epos++)
 							{
 								epos2=Math.max(Math.min(epos-shift,Math.min(resolution-wpos, resolution)-1),Math.max(-wpos, 0));
-								tmp+=Math.pow((double) plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i2+1)[epos2+wpos][0],2);
-								tmp1+=Math.pow((double) plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i1+1)[epos+wpos][0],2);
-								tmp2+=Math.pow((double) plot.plotlist.get(i2+1)[epos2][0]*plot.plotlist.get(i2+1)[epos2+wpos][0],2);
+								tmp+= plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i2+1)[epos2+wpos][0];
+								tmp1+=plot.plotlist.get(i1+1)[epos][0]*plot.plotlist.get(i1+1)[epos+wpos][0];
+								tmp2+=plot.plotlist.get(i2+1)[epos2][0]*plot.plotlist.get(i2+1)[epos2+wpos][0];
 							}
 							norm=norm+tmp*fact;
 							norm1=norm1+tmp1*fact;
